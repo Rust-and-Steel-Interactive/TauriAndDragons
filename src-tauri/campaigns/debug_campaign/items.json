@@ -132,6 +132,44 @@
       "weight": 0.2,
       "base_value": 30,
       "base_effect": "SAVING_THROW_BONUS_1"
+    },
+    "arrow": {
+      "name": "Arrow",
+      "item_class": "AMMO",
+      "weight": 0.05,
+      "base_value": 1,
+      "ammo_type": "arrow",
+      "damage_type": "piercing"
+    },
+    "crossbow_bolt": {
+      "name": "Crossbow Bolt",
+      "item_class": "AMMO",
+      "weight": 0.1,
+      "base_value": 2,
+      "ammo_type": "bolt",
+      "damage_type": "piercing"
+    },
+    "shortbow": {
+      "name": "Shortbow",
+      "item_class": "RANGED",
+      "base_damage_dice": "1d6",
+      "weight": 2.0,
+      "base_value": 25,
+      "handedness": "TWO_HANDED",
+      "damage_type": "piercing",
+      "ammo_type": "arrow",
+      "weapon_range": { "normal": 16, "long": 64 }
+    },
+    "light_crossbow": {
+      "name": "Light Crossbow",
+      "item_class": "RANGED",
+      "base_damage_dice": "1d8",
+      "weight": 4.0,
+      "base_value": 50,
+      "handedness": "TWO_HANDED",
+      "damage_type": "piercing",
+      "ammo_type": "bolt",
+      "weapon_range": { "normal": 12, "long": 48 }
     }
   }
 }

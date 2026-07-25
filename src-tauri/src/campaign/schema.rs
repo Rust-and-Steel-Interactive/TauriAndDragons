@@ -144,6 +144,11 @@ pub struct BaseItem {
     pub damage_type: Option<DamageType>,
     #[serde(default)]
     pub weapon_range: Option<WeaponRange>,
+    /// For a RANGED weapon: the ammo type it consumes (e.g. "arrow").
+    /// For an AMMO-class item: its own ammo type identity (e.g. "arrow").
+    /// None on everything else.
+    #[serde(default)]
+    pub ammo_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

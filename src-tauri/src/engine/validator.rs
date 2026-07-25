@@ -168,6 +168,38 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
                 return Err(CommandRejection::NonCritical("Target is out of range for your weapon.".to_string()));
             }
 
+            // ── "Ranged while adjacent" penalty setup ──
+            let weapon_item_class = state.get_equipped_weapon().map(|w| w.item_class.clone());
+            let is_ranged_style = matches!(weapon_item_class.as_deref(), Some("RANGED") | Some("MAGIC"));
+            let enemy_adjacent_to_player = state.get_current_room()
+                .map(|r| r.enemies.iter().any(|e| e.hp > 0 && crate::engine::state::is_adjacent(e.x, e.y, state.player.x, state.player.y)))
+                .unwrap_or(false);
+
+            // ── LOS check for ranged/magic attacks only ──
+            if is_ranged_style {
+                let target_pos = state.get_current_room()
+                    .and_then(|r| r.enemies.iter().find(|e| e.id == *target))
+                    .map(|e| (e.x, e.y));
+                let has_los = match target_pos {
+                    Some((tx, ty)) => state.get_current_room()
+                        .map(|r| crate::engine::state::has_line_of_sight(&r.tiles, state.player.x, state.player.y, tx, ty))
+                        .unwrap_or(false),
+                    None => false,
+                };
+                if !has_los {
+                    return Err(CommandRejection::NonCritical("You don't have a clear line of sight to that target.".to_string()));
+                }
+            }
+
+            // ── Ammo check (RANGED weapons that require ammo only; MAGIC is exempt) ──
+            if weapon_item_class.as_deref() == Some("RANGED") {
+                if let Some(required_ammo) = state.get_equipped_weapon().and_then(|w| w.ammo_type.clone()) {
+                    if !crate::engine::state::has_matching_ammo(&state.player, &required_ammo) {
+                        return Err(CommandRejection::NonCritical(format!("You're out of {} for your weapon.", required_ammo)));
+                    }
+                }
+            }
+
             let mut rng = rand::thread_rng();
             let atk_roll = rng.gen_range(1..=20);
 
@@ -187,6 +219,9 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
             let proficiency = state.player.proficiency_bonus;
             let mut atk_bonus = atk_stat_mod + proficiency;
             if range_band == crate::engine::combat::RangeBand::LongRange {
+                atk_bonus -= 5;
+            }
+            if is_ranged_style && enemy_adjacent_to_player {
                 atk_bonus -= 5;
             }
             let atk_total = atk_roll + atk_bonus;
@@ -224,6 +259,15 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
                 state.last_roll = format!("d20+{} = {} (MISS) vs AC {}", atk_bonus, atk_total, enemy_ac);
                 state.last_combat_event = format!("Player attacked {} with {}. Attack roll d20+{} = {} vs AC {}. MISS.", enemy_name, weapon_name, atk_bonus, atk_total, enemy_ac);
             }
+
+            if weapon_item_class.as_deref() == Some("RANGED") {
+                if let Some(required_ammo) = state.get_equipped_weapon().and_then(|w| w.ammo_type.clone()) {
+                    if crate::engine::state::consume_matching_ammo(&mut state.player, &required_ammo) {
+                        state.ammo_consumed_this_combat.entry(required_ammo).and_modify(|c| *c += 1).or_insert(1);
+                    }
+                }
+            }
+
             Ok(())
         }
 

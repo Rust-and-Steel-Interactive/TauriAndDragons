@@ -70,6 +70,8 @@ impl GameEngine {
                 self.state.combat_log.clear();
                 self.state.round_number = 0;
                 self.state.spotted_enemy_ids.clear();
+                let room_id = self.state.current_room_id.clone();
+                self.recover_ammo_from_combat(&room_id);
             } else if self.state.initiative_order.is_empty() {
                 self.state.initiative_order = vec!["player".to_string()];
             }
@@ -449,8 +451,9 @@ impl GameEngine {
         let mut rng = rand::thread_rng();
         let attack_range = state::get_enemy_attack_range(enemy);
         let dist = state::chebyshev_distance(ex, ey, target_x, target_y);
+        let range_band = crate::engine::combat::classify_range(dist, &attack_range);
 
-        if dist > attack_range {
+        if range_band == crate::engine::combat::RangeBand::OutOfRange {
             return String::new();
         }
 
@@ -464,7 +467,10 @@ impl GameEngine {
         let target_ac = compute_player_ac(&self.state.player);
         let atk_roll = rng.gen_range(1..=20);
         let is_crit = atk_roll == 20;
-        let atk_bonus = enemy.get_effective_attack_bonus();
+        let mut atk_bonus = enemy.get_effective_attack_bonus();
+        if range_band == crate::engine::combat::RangeBand::LongRange {
+            atk_bonus -= 5;
+        }
         let atk_total = atk_roll + atk_bonus;
 
         // Consume the action resource
@@ -683,7 +689,7 @@ impl GameEngine {
             NoOp,
         }
 
-        let can_attack_in_place = dist_to_player <= attack_range
+        let can_attack_in_place = crate::engine::combat::classify_range(dist_to_player, &attack_range) != crate::engine::combat::RangeBand::OutOfRange
             && self.state.get_current_room()
                 .map(|r| state::has_line_of_sight(&r.tiles, enemy.x, enemy.y, self.state.player.x, self.state.player.y))
                 .unwrap_or(false);
@@ -720,11 +726,11 @@ impl GameEngine {
                 occupied.push((px, py));
 
                 let attack_range = state::get_enemy_attack_range(&enemy);
-                let is_ranged = attack_range > 1;
+                let is_ranged = attack_range.normal > 1;
 
                 // Find goal tiles: preferred distance depends on weapon
                 let goal = {
-                    let pref_dist: i32 = if is_ranged { attack_range.min(6) } else { 1 };
+                    let pref_dist: i32 = if is_ranged { attack_range.normal.min(6) } else { 1 };
                     // Build a list of all unoccupied, in-bounds tiles at Chebyshev distance pref_dist from player
                     let adj_candidates = {
                         let mut c = Vec::new();
@@ -805,7 +811,8 @@ impl GameEngine {
                     room.and_then(|r| {
                         r.enemies.iter().find(|e| e.id == enemy_id).map(|e| {
                             let dist = state::chebyshev_distance(e.x, e.y, self.state.player.x, self.state.player.y);
-                            dist <= state::get_enemy_attack_range(e)
+                            let e_range = state::get_enemy_attack_range(e);
+                            crate::engine::combat::classify_range(dist, &e_range) != crate::engine::combat::RangeBand::OutOfRange
                             && state::has_line_of_sight(
                                 &r.tiles, e.x, e.y,
                                 self.state.player.x, self.state.player.y,
@@ -1445,6 +1452,7 @@ impl GameEngine {
             entry
         };
 
+        self.recover_ammo_from_combat(&current_room_id);
         self.state.current_room_id = target_room_id.clone();
 
         if let Some(room) = self.state.rooms.iter_mut().find(|r| r.id == target_room_id) {
@@ -1587,7 +1595,6 @@ impl GameEngine {
             .trim_start_matches("ACTION_ATTACK_")
             .trim_start_matches("ATTACK_")
             .to_string();
-        let mut rng = rand::thread_rng();
 
         // ── Visibility check: only visible enemies can be targeted ──
         let target_visible = self.state.get_current_room()
@@ -1618,14 +1625,26 @@ impl GameEngine {
         };
 
         let weapon_range = state::get_weapon_range(&self.state.player);
-        let range_band = crate::engine::combat::classify_range(target_dist, &weapon_range);
+        let weapon_item_class = self.state.get_equipped_weapon().map(|w| w.item_class.clone());
+        let is_ranged_style = matches!(weapon_item_class.as_deref(), Some("RANGED") | Some("MAGIC"));
 
-        if range_band == crate::engine::combat::RangeBand::OutOfRange {
-            return "SYS_MSG:Target is out of range for your weapon.".to_string();
+        // ── Ammo check (RANGED weapons that require ammo only; MAGIC is exempt) ──
+        if weapon_item_class.as_deref() == Some("RANGED") {
+            if let Some(required_ammo) = self.state.get_equipped_weapon().and_then(|w| w.ammo_type.clone()) {
+                if !state::has_matching_ammo(&self.state.player, &required_ammo) {
+                    return format!("SYS_MSG:You're out of {} for your weapon.", required_ammo);
+                }
+            }
         }
 
-        let atk_roll = rng.gen_range(1..=20);
-        let is_crit = atk_roll == 20;
+        let has_los = self.state.get_current_room()
+            .and_then(|r| r.enemies.iter().find(|e| e.id == target_id).map(|e| (r, e)))
+            .map(|(r, e)| state::has_line_of_sight(&r.tiles, self.state.player.x, self.state.player.y, e.x, e.y))
+            .unwrap_or(false);
+
+        let enemy_adjacent_to_player = self.state.get_current_room()
+            .map(|r| r.enemies.iter().any(|e| e.hp > 0 && state::is_adjacent(e.x, e.y, self.state.player.x, self.state.player.y)))
+            .unwrap_or(false);
 
         let (weapon_name, dmg_dice, dmg_bonus, atk_stat_mod, weapon_damage_type) = {
             if let Some(w) = self.state.get_equipped_weapon() {
@@ -1640,100 +1659,120 @@ impl GameEngine {
                 ("Unarmed Strike".to_string(), "1d4".to_string(), 0, stat_mod, state::DamageType::default())
             }
         };
-        let proficiency = self.state.player.proficiency_bonus;
-        let mut atk_bonus = atk_stat_mod + proficiency;
-        if range_band == crate::engine::combat::RangeBand::LongRange {
-            atk_bonus -= 5;
-        }
-        let atk_total = atk_roll + atk_bonus;
+
+        let (enemy_ac, enemy_name, enemy_dodging) = {
+            let room = self.state.get_current_room().unwrap();
+            let enemy = room.enemies.iter().find(|e| e.id == target_id).unwrap();
+            (compute_enemy_ac(enemy), enemy.name.clone(), self.state.combat_resources.get(&enemy.id).map(|r| r.is_dodging).unwrap_or(false))
+        };
+
+        let effective_ac = if enemy_dodging { enemy_ac + 5 } else { enemy_ac };
         let total_dmg_bonus = dmg_bonus + atk_stat_mod;
+
+        let ctx = crate::engine::combat::AttackContext {
+            distance: target_dist,
+            weapon_range,
+            has_line_of_sight: has_los,
+            is_ranged_style,
+            hostile_adjacent_to_attacker: enemy_adjacent_to_player,
+            attack_stat_mod: atk_stat_mod,
+            proficiency_bonus: self.state.player.proficiency_bonus,
+            target_ac: enemy_ac,
+            target_dodging: enemy_dodging,
+        };
+
+        let outcome = crate::engine::combat::resolve_attack_roll(&ctx);
 
         let mut fact_packet = String::new();
         let mut roll_str = String::new();
 
-        let enemy_ac;
-        let enemy_name;
-        let enemy_dodging;
-        {
-            let room = self.state.get_current_room().unwrap();
-            let enemy = room.enemies.iter().find(|e| e.id == target_id).unwrap();
-            enemy_ac = compute_enemy_ac(enemy);
-            enemy_name = enemy.name.clone();
-            enemy_dodging = self.state.combat_resources.get(&enemy.id)
-                .map(|r| r.is_dodging).unwrap_or(false);
-        }
-
-        // Apply Dodge penalty: disadvantage approximated as -5
-        let effective_ac = if enemy_dodging { enemy_ac + 5 } else { enemy_ac };
-
-        if is_crit || atk_total >= effective_ac {
-            let (dice_only, embedded) = roll_dice_expr(&dmg_dice);
-            let dice_roll = if is_crit { dice_only * 2 } else { dice_only };
-            let dmg_roll = dice_roll + embedded + total_dmg_bonus;
-
-            self.state.apply_damage(&target_id, dmg_roll, weapon_damage_type).unwrap();
-
-            roll_str = format!("d20+{} = {} (HIT) vs AC {}. Dmg: {}{} = {}{}",
-                atk_bonus, atk_total, effective_ac, dmg_dice,
-                if total_dmg_bonus >= 0 { format!("+{}", total_dmg_bonus) } else { format!("{}", total_dmg_bonus) },
-                dmg_roll, if is_crit { " [CRIT!]" } else { "" });
-
-            self.state.log_combat(format!("{} attacks {}: d20+{}={} vs AC {}. Hits for {} damage{}.",
-                "player", enemy_name, atk_bonus, atk_total, effective_ac, dmg_roll,
-                if is_crit { " (CRITICAL!)" } else { "" }));
-
-            fact_packet = format!(
-                "You are the Dungeon Master. Narrate this combat exchange. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
-                 --- ENGINE FACT PACKET ---\n\
-                 EVENT_TYPE: PlayerCombatAction\n\
-                 RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"ATTACK\"\n  target: \"{}\"\n  outcome: \"HIT\"\n  weapon: \"{}\"\n\
-                 DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n  - Damage: {}{} = {}{}\n\
-                 STATE_DELTAS:\n  - {} HP is now {}.\n",
-                enemy_name, weapon_name, atk_bonus, atk_total, effective_ac, dmg_dice,
-                if total_dmg_bonus >= 0 { format!("+{}", total_dmg_bonus) } else { format!("{}", total_dmg_bonus) },
-                dmg_roll, if is_crit { " (CRITICAL)" } else { "" }, enemy_name,
-                self.state.get_current_room().unwrap().enemies.iter().find(|e| e.id == target_id).map(|e| e.hp).unwrap_or(0)
-            );
-
-            // Check enemy death
-            let is_dead = self.state.get_current_room()
-                .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
-                .map(|e| e.hp <= 0).unwrap_or(false);
-
-            if is_dead {
-                fact_packet.push_str(&format!("\nTRIGGER: ENEMY_DEATH ({}). COMBAT_MAY_END.", enemy_name));
-                let (loot_items, xp_val) = {
-                    let dead_enemy = self.state.get_current_room().unwrap().enemies.iter()
-                        .find(|e| e.id == target_id).unwrap();
-                    (self.generate_loot_for_enemy(dead_enemy), dead_enemy.xp)
-                };
-                for item in &loot_items {
-                    state::add_to_inventory(&mut self.state.player.inventory, item.clone());
-                }
-                let gp = (xp_val / 5).max(1);
-                self.state.player.gp += gp;
-                self.state.last_loot.push(state::LootGroup {
-                    source_name: enemy_name.clone(),
-                    gp,
-                    items: loot_items,
-                });
+        match outcome {
+            crate::engine::combat::AttackOutcome::OutOfRange => {
+                return "SYS_MSG:Target is out of range for your weapon.".to_string();
             }
-        } else {
-            roll_str = format!("d20+{} = {} (MISS) vs AC {}", atk_bonus, atk_total, effective_ac);
-            self.state.log_combat(format!("{} attacks {}: d20+{}={} vs AC {}. Misses.",
-                "player", enemy_name, atk_bonus, atk_total, effective_ac));
-            fact_packet = format!(
-                "You are the Dungeon Master. Narrate this combat exchange. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
-                 --- ENGINE FACT PACKET ---\n\
-                 EVENT_TYPE: PlayerCombatAction\n\
-                 RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"ATTACK\"\n  target: \"{}\"\n  outcome: \"MISS\"\n  weapon: \"{}\"\n\
-                 DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n\
-                 STATE_DELTAS:\n  - (none)\n",
-                enemy_name, weapon_name, atk_bonus, atk_total, effective_ac
-            );
+            crate::engine::combat::AttackOutcome::NoLineOfSight => {
+                return "SYS_MSG:You don't have a clear line of sight to that target.".to_string();
+            }
+            crate::engine::combat::AttackOutcome::Hit { atk_bonus, atk_total, is_crit, .. } => {
+                let (dice_only, embedded) = roll_dice_expr(&dmg_dice);
+                let dmg_roll = crate::engine::combat::resolve_damage_roll(
+                    dice_only, atk_stat_mod, dmg_bonus + embedded, is_crit,
+                );
+
+                self.state.apply_damage(&target_id, dmg_roll, weapon_damage_type).unwrap();
+
+                roll_str = format!("d20+{} = {} (HIT) vs AC {}. Dmg: {}{} = {}{}",
+                    atk_bonus, atk_total, effective_ac, dmg_dice,
+                    if total_dmg_bonus >= 0 { format!("+{}", total_dmg_bonus) } else { format!("{}", total_dmg_bonus) },
+                    dmg_roll, if is_crit { " [CRIT!]" } else { "" });
+
+                self.state.log_combat(format!("{} attacks {}: d20+{}={} vs AC {}. Hits for {} damage{}.",
+                    "player", enemy_name, atk_bonus, atk_total, effective_ac, dmg_roll,
+                    if is_crit { " (CRITICAL!)" } else { "" }));
+
+                fact_packet = format!(
+                    "You are the Dungeon Master. Narrate this combat exchange. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                     --- ENGINE FACT PACKET ---\n\
+                     EVENT_TYPE: PlayerCombatAction\n\
+                     RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"ATTACK\"\n  target: \"{}\"\n  outcome: \"HIT\"\n  weapon: \"{}\"\n\
+                     DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n  - Damage: {}{} = {}{}\n\
+                     STATE_DELTAS:\n  - {} HP is now {}.\n",
+                    enemy_name, weapon_name, atk_bonus, atk_total, effective_ac, dmg_dice,
+                    if total_dmg_bonus >= 0 { format!("+{}", total_dmg_bonus) } else { format!("{}", total_dmg_bonus) },
+                    dmg_roll, if is_crit { " (CRITICAL)" } else { "" }, enemy_name,
+                    self.state.get_current_room().unwrap().enemies.iter().find(|e| e.id == target_id).map(|e| e.hp).unwrap_or(0)
+                );
+
+                // Check enemy death
+                let is_dead = self.state.get_current_room()
+                    .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
+                    .map(|e| e.hp <= 0).unwrap_or(false);
+
+                if is_dead {
+                    fact_packet.push_str(&format!("\nTRIGGER: ENEMY_DEATH ({}). COMBAT_MAY_END.", enemy_name));
+                    let (loot_items, xp_val) = {
+                        let dead_enemy = self.state.get_current_room().unwrap().enemies.iter()
+                            .find(|e| e.id == target_id).unwrap();
+                        (self.generate_loot_for_enemy(dead_enemy), dead_enemy.xp)
+                    };
+                    for item in &loot_items {
+                        state::add_to_inventory(&mut self.state.player.inventory, item.clone());
+                    }
+                    let gp = (xp_val / 5).max(1);
+                    self.state.player.gp += gp;
+                    self.state.last_loot.push(state::LootGroup {
+                        source_name: enemy_name.clone(),
+                        gp,
+                        items: loot_items,
+                    });
+                }
+            }
+            crate::engine::combat::AttackOutcome::Miss { atk_bonus, atk_total, .. } => {
+                roll_str = format!("d20+{} = {} (MISS) vs AC {}", atk_bonus, atk_total, effective_ac);
+                self.state.log_combat(format!("{} attacks {}: d20+{}={} vs AC {}. Misses.",
+                    "player", enemy_name, atk_bonus, atk_total, effective_ac));
+                fact_packet = format!(
+                    "You are the Dungeon Master. Narrate this combat exchange. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                     --- ENGINE FACT PACKET ---\n\
+                     EVENT_TYPE: PlayerCombatAction\n\
+                     RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"ATTACK\"\n  target: \"{}\"\n  outcome: \"MISS\"\n  weapon: \"{}\"\n\
+                     DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n\
+                     STATE_DELTAS:\n  - (none)\n",
+                    enemy_name, weapon_name, atk_bonus, atk_total, effective_ac
+                );
+            }
         }
 
         self.state.last_roll = roll_str;
+
+        // ── Ammo consumption (fires on hit or miss, once the ammo check in Step 21 has passed) ──
+        if weapon_item_class.as_deref() == Some("RANGED") {
+            if let Some(required_ammo) = self.state.get_equipped_weapon().and_then(|w| w.ammo_type.clone()) {
+                if state::consume_matching_ammo(&mut self.state.player, &required_ammo) {
+                    *self.state.ammo_consumed_this_combat.entry(required_ammo).or_insert(0) += 1;
+                }
+            }
+        }
 
         if let Some(room) = self.state.get_current_room_mut() {
             room.enemies.retain(|e| e.hp > 0);
@@ -2115,6 +2154,7 @@ impl GameEngine {
                 }
             }
 
+            let old_room_id = self.state.current_room_id.clone();
             let mut flee_to_str = String::new();
             if let Some(room) = self.state.get_current_room() {
                 if let Some(flee_to) = room.connections.first() {
@@ -2122,6 +2162,7 @@ impl GameEngine {
                 }
             }
             if !flee_to_str.is_empty() {
+                self.recover_ammo_from_combat(&old_room_id);
                 self.state.current_room_id = flee_to_str.clone();
                 self.update_visibility();
                 self.check_combat_state();
@@ -3264,6 +3305,40 @@ impl GameEngine {
              LOOT:\n{}\n",
             loot_desc.join("\n")
         )
+    }
+
+    /// Roll 50% recovery per unit of ammo consumed during the just-ended combat,
+    /// dropping any recovered ammo into the room where the fight happened.
+    fn recover_ammo_from_combat(&mut self, room_id: &str) {
+        if self.state.ammo_consumed_this_combat.is_empty() {
+            return;
+        }
+        let mut rng = rand::thread_rng();
+        let consumed = std::mem::take(&mut self.state.ammo_consumed_this_combat);
+        let px = self.state.player.x;
+        let py = self.state.player.y;
+
+        for (ammo_type, count) in consumed {
+            let recovered = (0..count).filter(|_| rng.gen_bool(0.5)).count() as i32;
+            if recovered <= 0 {
+                continue;
+            }
+
+            let template_id = self.campaign.items.base_items.iter()
+                .find(|(_, item)| item.item_class == "AMMO" && item.ammo_type.as_deref() == Some(ammo_type.as_str()))
+                .map(|(id, _)| id.clone());
+
+            if let Some(template_id) = template_id {
+                if let Some(mut item) = procedural::generate_item_instance(&self.campaign, "AMMO", 2, 2, Some(&template_id)) {
+                    item.quantity = recovered;
+                    item.placed_x = Some(px);
+                    item.placed_y = Some(py);
+                    if let Some(room) = self.state.rooms.iter_mut().find(|r| r.id == room_id) {
+                        room.loot.push(item);
+                    }
+                }
+            }
+        }
     }
 
     pub fn build_outcome_packet(&self) -> String {

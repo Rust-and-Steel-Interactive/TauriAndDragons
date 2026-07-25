@@ -79,5 +79,39 @@
             "2": { "name": "Chemical Fire", "value_mult": 1.5, "stat_bonus": 1 },
             "3": { "name": "Eldritch Glow", "value_mult": 2.0, "stat_bonus": 2 }
         }
+    },
+    "RANGED": {
+        "quality": {
+            "1": { "name": "Test-Grade", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Good", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Perfect", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Debug Wood", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Ash", "stat_bonus": 1, "value_mult": 1.5 },
+            "3": { "name": "Yew", "stat_bonus": 2, "value_mult": 3.0 },
+            "4": { "name": "Ironwood", "stat_bonus": 3, "value_mult": 8.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Test", "stat_bonus": 0, "value_mult": 1.2, "effect": "plus_one_atk" },
+            "3": { "name": "Refined", "stat_bonus": 0, "value_mult": 2.0, "effect": "crit_19" },
+            "4": { "name": "Masterwork", "stat_bonus": 1, "value_mult": 5.0 }
+        }
+    },
+    "AMMO": {
+        "quality": {
+            "1": { "name": "Crude", "value_mult": 0.5 },
+            "2": { "name": "Standard", "value_mult": 1.0 },
+            "3": { "name": "Fine", "value_mult": 2.0 },
+            "4": { "name": "Masterwork", "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Wood", "value_mult": 1.0 },
+            "2": { "name": "Iron-Tipped", "value_mult": 1.5 },
+            "3": { "name": "Steel-Tipped", "value_mult": 3.0 },
+            "4": { "name": "Silvered", "value_mult": 8.0 }
+        }
     }
 }

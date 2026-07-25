@@ -214,6 +214,32 @@ pub fn stacks_with(a: &ItemInstance, b: &ItemInstance) -> bool {
     !a.variant_id.is_empty() && a.variant_id == b.variant_id
 }
 
+/// Check whether the player's inventory contains at least one unit of an
+/// AMMO-class item whose `ammo_type` matches the given weapon's required type.
+pub fn has_matching_ammo(player: &Player, ammo_type: &str) -> bool {
+    player.inventory.iter().any(|i| {
+        i.item_class == "AMMO" && i.ammo_type.as_deref() == Some(ammo_type) && i.quantity > 0
+    })
+}
+
+/// Remove one unit of the first inventory AMMO item matching the given ammo_type.
+/// Returns true if a unit was consumed. Callers should have already verified
+/// ammo availability via `has_matching_ammo` before reaching this point, so a
+/// `false` return here would indicate a logic error, not a normal case.
+pub fn consume_matching_ammo(player: &mut Player, ammo_type: &str) -> bool {
+    if let Some(idx) = player.inventory.iter().position(|i| {
+        i.item_class == "AMMO" && i.ammo_type.as_deref() == Some(ammo_type) && i.quantity > 0
+    }) {
+        player.inventory[idx].quantity -= 1;
+        if player.inventory[idx].quantity <= 0 {
+            player.inventory.remove(idx);
+        }
+        true
+    } else {
+        false
+    }
+}
+
 pub fn add_to_inventory(inventory: &mut Vec<ItemInstance>, item: ItemInstance) {
     if is_stackable(&item.item_class) {
         if let Some(existing) = inventory.iter_mut().find(|i| stacks_with(i, &item)) {
@@ -281,9 +307,13 @@ pub fn get_weapon_range(player: &Player) -> WeaponRange {
     }
 }
 
-pub fn get_enemy_attack_range(enemy: &Enemy) -> i32 {
+pub fn get_enemy_attack_range(enemy: &Enemy) -> WeaponRange {
     let has_ranged = enemy.perks.iter().any(|p| p == "RANGED_ATTACK");
-    if has_ranged { 6 } else { 1 }
+    if has_ranged {
+        WeaponRange { normal: 6, long: Some(12) }
+    } else {
+        WeaponRange { normal: 1, long: None }
+    }
 }
 
 /// Check if a tile is blocked by a wall or obstacle
@@ -521,6 +551,8 @@ pub struct SessionState {
     pub round_number: i32,
     pub initiative_entries: Vec<InitiativeEntry>,
     pub spotted_enemy_ids: HashSet<String>,
+    #[serde(default)]
+    pub ammo_consumed_this_combat: HashMap<String, i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -616,6 +648,11 @@ pub struct ItemInstance {
     pub damage_type: Option<DamageType>,
     #[serde(default)]
     pub weapon_range: Option<WeaponRange>,
+    /// For a RANGED weapon: the ammo type it consumes (e.g. "arrow").
+    /// For an AMMO-class item: its own ammo type identity (e.g. "arrow").
+    /// None on everything else.
+    #[serde(default)]
+    pub ammo_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1013,8 +1050,9 @@ impl SessionState {
             round_number: 0,
             initiative_entries: vec![],
             spotted_enemy_ids: HashSet::new(),
+            ammo_consumed_this_combat: HashMap::new(),
         };
-        
+
         new_state.generate_available_actions();
         new_state
     }
@@ -1046,6 +1084,12 @@ impl SessionState {
             self.available_actions = vec![];
             return;
         }
+
+        let attack_blocked_by_ammo = self.get_equipped_weapon()
+            .filter(|w| w.item_class == "RANGED")
+            .and_then(|w| w.ammo_type.clone())
+            .map(|ammo_type| !has_matching_ammo(&self.player, &ammo_type))
+            .unwrap_or(false);
 
         if let Some(room) = self.get_current_room() {
             // ── No enemies in room: free exploration ──
@@ -1147,8 +1191,10 @@ impl SessionState {
                     }
 
                     if can_do_action {
-                        for enemy in &visible_enemies {
-                            actions.push(format!("ACTION_ATTACK_{}", enemy.id));
+                        if !attack_blocked_by_ammo {
+                            for enemy in &visible_enemies {
+                                actions.push(format!("ACTION_ATTACK_{}", enemy.id));
+                            }
                         }
                         actions.push("ACTION_DASH".to_string());
                         actions.push("ACTION_DODGE".to_string());
@@ -1218,7 +1264,9 @@ impl SessionState {
                     }
 
                     for enemy in &visible_enemies {
-                        actions.push(format!("ATTACK_{}", enemy.id));
+                        if !attack_blocked_by_ammo {
+                            actions.push(format!("ATTACK_{}", enemy.id));
+                        }
                         if !enemy.studied {
                             actions.push(format!("STUDY_{}", enemy.id));
                         }
@@ -1709,6 +1757,7 @@ mod tests {
             combat_resources: HashMap::new(), combat_log: vec![],
             round_number: 0, initiative_entries: vec![],
             spotted_enemy_ids: HashSet::new(),
+            ammo_consumed_this_combat: HashMap::new(),
         };
 
         state.apply_damage("enemy_1", 10, DamageType::Bludgeoning).unwrap();
@@ -1752,6 +1801,7 @@ impl ItemInstance {
             tier: None,
             damage_type: None,
             weapon_range: None,
+            ammo_type: None,
         }
     }
 }

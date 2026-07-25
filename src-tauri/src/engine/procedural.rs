@@ -385,6 +385,7 @@ pub fn generate_item_instance(
                 tier: base_item.tier,
                 damage_type: base_item.damage_type,
                 weapon_range: base_item.weapon_range.clone(),
+                ammo_type: base_item.ammo_type.clone(),
             });
         } else {
             let display_name = generate_tool_name(tier_val, &base_item.name);
@@ -427,6 +428,7 @@ pub fn generate_item_instance(
                 tier: base_item.tier,
                 damage_type: base_item.damage_type,
                 weapon_range: base_item.weapon_range.clone(),
+                ammo_type: base_item.ammo_type.clone(),
             });
         }
     }
@@ -504,6 +506,7 @@ pub fn generate_item_instance(
         tier: base_item.tier,
         damage_type: base_item.damage_type,
         weapon_range: base_item.weapon_range.clone(),
+        ammo_type: base_item.ammo_type.clone(),
     })
 }
 
