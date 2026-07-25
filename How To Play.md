@@ -4,7 +4,7 @@
 
 ---
 
-## What Is This Game?
+## What Is This Gam  e?
 
 Tauri & Dragons is a single-player tabletop RPG where you explore dungeons, fight monsters, and collect loot. A local AI (Gemma) acts as your Dungeon Master — it describes what you see, narrates combat, and responds to whatever you type. The game engine handles all the rules (dice rolls, damage, line-of-sight, inventory) so you can focus on playing.
 

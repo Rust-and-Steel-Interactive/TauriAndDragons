@@ -1,4 +1,34 @@
-use crate::engine::state::{DamageType, DamageProfile};
+use crate::engine::state::{DamageType, DamageProfile, WeaponRange};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum RangeBand {
+    InRange,
+    LongRange,
+    OutOfRange,
+}
+
+/// Classify a tile distance against a weapon's range profile.
+///
+/// - `dist <= range.normal` → InRange (no penalty).
+/// - `range.normal < dist <= range.long` (if the weapon has a long range) → LongRange
+///   (later steps apply a penalty for this band).
+/// - Anything beyond that (or beyond `normal` for a weapon with no `long` at all,
+///   e.g. melee) → OutOfRange (attack is blocked).
+#[allow(dead_code)]
+pub fn classify_range(dist: i32, range: &WeaponRange) -> RangeBand {
+    if dist <= range.normal {
+        RangeBand::InRange
+    } else if let Some(long) = range.long {
+        if dist <= long {
+            RangeBand::LongRange
+        } else {
+            RangeBand::OutOfRange
+        }
+    } else {
+        RangeBand::OutOfRange
+    }
+}
 
 /// Apply a target's resistance/vulnerability/immunity profile to an incoming
 /// damage amount for a specific damage type.
@@ -65,5 +95,32 @@ mod tests {
     fn test_neither_unchanged() {
         let profile = DamageProfile::default();
         assert_eq!(apply_resistance(9, DamageType::Poison, &profile), 9);
+    }
+
+    #[test]
+    fn test_classify_range_in_range() {
+        let range = WeaponRange { normal: 6, long: Some(20) };
+        assert_eq!(classify_range(4, &range), RangeBand::InRange);
+        assert_eq!(classify_range(6, &range), RangeBand::InRange);
+    }
+
+    #[test]
+    fn test_classify_range_long_range() {
+        let range = WeaponRange { normal: 6, long: Some(20) };
+        assert_eq!(classify_range(10, &range), RangeBand::LongRange);
+        assert_eq!(classify_range(20, &range), RangeBand::LongRange);
+    }
+
+    #[test]
+    fn test_classify_range_out_of_range_beyond_long() {
+        let range = WeaponRange { normal: 6, long: Some(20) };
+        assert_eq!(classify_range(21, &range), RangeBand::OutOfRange);
+    }
+
+    #[test]
+    fn test_classify_range_melee_no_long_range() {
+        let range = WeaponRange { normal: 1, long: None };
+        assert_eq!(classify_range(1, &range), RangeBand::InRange);
+        assert_eq!(classify_range(2, &range), RangeBand::OutOfRange);
     }
 }

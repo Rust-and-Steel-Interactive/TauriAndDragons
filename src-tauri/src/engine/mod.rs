@@ -1607,17 +1607,21 @@ impl GameEngine {
             return "SYS_MSG:That enemy is not visible. Move closer to reveal them.".to_string();
         }
 
-        // ── Melee range check ──
-        let weapon_class = self.state.get_equipped_weapon().map(|w| w.item_class.clone());
-        let is_melee = weapon_class.as_deref() == Some("MELEE") || weapon_class.is_none();
-        if is_melee {
-            let in_range = self.state.get_current_room()
-                .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
-                .map(|e| (e.x - self.state.player.x).abs() <= 1 && (e.y - self.state.player.y).abs() <= 1)
-                .unwrap_or(false);
-            if !in_range {
-                return "SYS_MSG:Target is out of melee range. You must be adjacent to attack.".to_string();
-            }
+        // ── Range check (all weapon classes) ──
+        let target_dist = self.state.get_current_room()
+            .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
+            .map(|e| state::chebyshev_distance(e.x, e.y, self.state.player.x, self.state.player.y));
+
+        let target_dist = match target_dist {
+            Some(d) => d,
+            None => return "SYS_MSG:Target enemy not found.".to_string(),
+        };
+
+        let weapon_range = state::get_weapon_range(&self.state.player);
+        let range_band = crate::engine::combat::classify_range(target_dist, &weapon_range);
+
+        if range_band == crate::engine::combat::RangeBand::OutOfRange {
+            return "SYS_MSG:Target is out of range for your weapon.".to_string();
         }
 
         let atk_roll = rng.gen_range(1..=20);
@@ -1637,7 +1641,10 @@ impl GameEngine {
             }
         };
         let proficiency = self.state.player.proficiency_bonus;
-        let atk_bonus = atk_stat_mod + proficiency;
+        let mut atk_bonus = atk_stat_mod + proficiency;
+        if range_band == crate::engine::combat::RangeBand::LongRange {
+            atk_bonus -= 5;
+        }
         let atk_total = atk_roll + atk_bonus;
         let total_dmg_bonus = dmg_bonus + atk_stat_mod;
 

@@ -151,17 +151,21 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
         }
 
         Command::Attack { target, .. } => {
-            // ── Melee range check ──
-            let weapon_class = state.get_equipped_weapon().map(|w| w.item_class.clone());
-            let is_melee = weapon_class.as_deref() == Some("MELEE") || weapon_class.is_none();
-            if is_melee {
-                let in_range = state.get_current_room()
-                    .and_then(|r| r.enemies.iter().find(|e| e.id == *target))
-                    .map(|e| (e.x - state.player.x).abs() <= 1 && (e.y - state.player.y).abs() <= 1)
-                    .unwrap_or(false);
-                if !in_range {
-                    return Err(CommandRejection::NonCritical("Target is out of melee range. You must be adjacent to attack.".to_string()));
-                }
+            // ── Range check (all weapon classes) ──
+            let target_dist = state.get_current_room()
+                .and_then(|r| r.enemies.iter().find(|e| e.id == *target))
+                .map(|e| crate::engine::state::chebyshev_distance(e.x, e.y, state.player.x, state.player.y));
+
+            let target_dist = match target_dist {
+                Some(d) => d,
+                None => return Err(CommandRejection::NonCritical("Target enemy not found.".to_string())),
+            };
+
+            let weapon_range = crate::engine::state::get_weapon_range(&state.player);
+            let range_band = crate::engine::combat::classify_range(target_dist, &weapon_range);
+
+            if range_band == crate::engine::combat::RangeBand::OutOfRange {
+                return Err(CommandRejection::NonCritical("Target is out of range for your weapon.".to_string()));
             }
 
             let mut rng = rand::thread_rng();
@@ -181,7 +185,10 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
                 }
             };
             let proficiency = state.player.proficiency_bonus;
-            let atk_bonus = atk_stat_mod + proficiency;
+            let mut atk_bonus = atk_stat_mod + proficiency;
+            if range_band == crate::engine::combat::RangeBand::LongRange {
+                atk_bonus -= 5;
+            }
             let atk_total = atk_roll + atk_bonus;
 
             let (hit, enemy_name, enemy_ac, enemy_hp_before) = {

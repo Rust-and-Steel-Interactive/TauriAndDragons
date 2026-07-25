@@ -251,33 +251,33 @@ pub fn remove_from_inventory(inventory: &mut Vec<ItemInstance>, instance_id: &st
 }
 
 /// Get attack range in tiles based on equipped weapon
-pub fn get_weapon_range(player: &Player) -> i32 {
+pub fn get_weapon_range(player: &Player) -> WeaponRange {
     if let Some(w) = player.inventory.iter().find(|i| {
         Some(i.instance_id.as_str()) == player.primary_hand.as_deref()
-            || Some(i.instance_id.as_str()) == player.secondary_hand.as_deref()
     }) {
-        if let Some(wr) = &w.weapon_range {
-            wr.normal
-        } else {
-            match w.item_class.as_str() {
-                "RANGED" => 10,
-                "MAGIC" => 6,
-                _ => {
-                    if w.weapon_type.as_deref() == Some("reach")
-                        || w.template_id.contains("reach")
-                        || w.template_id.contains("whip")
-                        || w.template_id.contains("polearm")
-                    {
-                        2
-                    } else {
-                        1
-                    }
+        // Data-driven range (Step 13) always wins if the item specifies one.
+        if let Some(explicit) = &w.weapon_range {
+            return explicit.clone();
+        }
+
+        match w.item_class.as_str() {
+            "RANGED" => WeaponRange { normal: 16, long: Some(64) },
+            "MAGIC" => WeaponRange { normal: 6, long: None },
+            _ => {
+                if w.weapon_type.as_deref() == Some("reach")
+                    || w.template_id.contains("reach")
+                    || w.template_id.contains("whip")
+                    || w.template_id.contains("polearm")
+                {
+                    WeaponRange { normal: 2, long: None }
+                } else {
+                    WeaponRange { normal: 1, long: None }
                 }
             }
         }
     } else {
         // Unarmed: adjacent only
-        1
+        WeaponRange { normal: 1, long: None }
     }
 }
 
