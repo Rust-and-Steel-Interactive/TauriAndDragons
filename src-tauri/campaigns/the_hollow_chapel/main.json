@@ -1,0 +1,26 @@
+{
+  "campaign_id": "the_hollow_chapel",
+  "campaign_name": "The Hollow Chapel",
+  "description": "A forgotten mountain chapel where exiled cultists awakened something beneath the altar.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 20,
+    "starting_ac": 12,
+    "starting_gp": 8,
+    "starting_strength": 14,
+    "starting_dexterity": 13,
+    "starting_constitution": 14,
+    "starting_intelligence": 10,
+    "starting_wisdom": 12,
+    "starting_charisma": 10,
+    "starting_proficiency_bonus": 2,
+    "starting_inventory": [
+      { "id": "health_potion", "quantity": 2 },
+      { "id": "shortsword", "quantity": 1 },
+      { "id": "leather_armor", "quantity": 1 },
+      { "id": "thieves_tools", "quantity": 1 }
+    ],
+    "starting_equipped_weapon": "shortsword",
+    "starting_thieves_tools": true
+  }
+}

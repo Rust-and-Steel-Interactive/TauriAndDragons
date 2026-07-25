@@ -1,0 +1,136 @@
+{
+  "base_items": {
+    "shortsword": {
+      "name": "Shortsword",
+      "item_class": "MELEE",
+      "base_damage_dice": "1d6",
+      "weight": 2.0,
+      "base_value": 10,
+      "handedness": "ONE_HANDED",
+      "damage_type": "slashing",
+      "weapon_range": { "normal": 1 }
+    },
+    "longbow": {
+      "name": "Longbow",
+      "item_class": "RANGED",
+      "base_damage_dice": "1d8",
+      "weight": 3.0,
+      "base_value": 50,
+      "handedness": "TWO_HANDED",
+      "damage_type": "piercing",
+      "weapon_range": { "normal": 16, "long": 64 }
+    },
+    "fire_dagger": {
+      "name": "Fire Dagger",
+      "item_class": "MELEE",
+      "base_damage_dice": "1d4",
+      "weight": 1.0,
+      "base_value": 25,
+      "handedness": "LIGHT",
+      "damage_type": "fire",
+      "weapon_range": { "normal": 1 }
+    },
+    "frost_staff": {
+      "name": "Frost Staff",
+      "item_class": "MAGIC",
+      "base_damage_dice": "1d8",
+      "weight": 4.0,
+      "base_value": 100,
+      "handedness": "TWO_HANDED",
+      "damage_type": "cold",
+      "weapon_range": { "normal": 6, "long": 12 }
+    },
+    "battle_axe": {
+      "name": "Battle Axe",
+      "item_class": "MELEE",
+      "base_damage_dice": "1d10",
+      "weight": 5.0,
+      "base_value": 30,
+      "handedness": "VERSATILE",
+      "damage_type": "slashing",
+      "weapon_range": { "normal": 1 }
+    },
+    "poison_dart": {
+      "name": "Poison Dart",
+      "item_class": "RANGED",
+      "base_damage_dice": "1d4",
+      "weight": 0.2,
+      "base_value": 10,
+      "handedness": "THROWN",
+      "damage_type": "poison",
+      "weapon_range": { "normal": 8, "long": 32 }
+    },
+    "health_potion": {
+      "name": "Health Potion",
+      "item_class": "CONSUMABLE",
+      "base_effect": "HEAL_2d4+2",
+      "weight": 0.5,
+      "base_value": 50
+    },
+    "leather_armor": {
+      "name": "Leather Armor",
+      "item_class": "ARMOR",
+      "armor_slot": "CHEST",
+      "armour_category": "LIGHT",
+      "dex_cap": null,
+      "base_ac_bonus": 1,
+      "weight": 2.0,
+      "base_value": 10
+    },
+    "silver_goblet": {
+      "name": "Silver Goblet",
+      "item_class": "VALUABLE",
+      "weight": 1.0,
+      "base_value": 25
+    },
+    "torch": {
+      "name": "Standard Torch",
+      "item_class": "TOOL",
+      "weight": 1.0,
+      "base_value": 1,
+      "light_radius": 3,
+      "duration_turns": 60,
+      "handedness": "ONE_HANDED"
+    },
+    "leather_belt": {
+      "name": "Leather Belt",
+      "item_class": "BELT",
+      "weight": 1.0,
+      "base_value": 10,
+      "tier": 1,
+      "utility_slots": 1,
+      "armor_slot": "WAIST",
+      "armour_category": "LIGHT"
+    },
+    "adventurers_belt": {
+      "name": "Adventurer's Belt",
+      "item_class": "BELT",
+      "weight": 1.5,
+      "base_value": 25,
+      "tier": 2,
+      "utility_slots": 1,
+      "armor_slot": "WAIST",
+      "armour_category": "LIGHT"
+    },
+    "rune_clasp_belt": {
+      "name": "Rune-Clasp Belt",
+      "item_class": "BELT",
+      "weight": 2.0,
+      "base_value": 100,
+      "tier": 3,
+      "utility_slots": 2,
+      "armor_slot": "WAIST",
+      "armour_category": "MEDIUM"
+    },
+    "titans_girdle": {
+      "name": "Titan's Girdle",
+      "item_class": "BELT",
+      "weight": 3.0,
+      "base_value": 300,
+      "tier": 4,
+      "utility_slots": 3,
+      "armor_slot": "WAIST",
+      "armour_category": "HEAVY"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "world_name": "D3 Debug Realm",
+  "tone": "Testing environment. Exercises damage type, resistance, and weapon range mechanics.",
+  "setting_lore": "A testing ground with rooms designed to verify Steps 1-13: damage type deserialization, damage profile resistance/vulnerability/immunity application, and weapon range data threading.",
+  "factions": [],
+  "key_locations": [
+    { "name": "D3 Hub", "description": "Starting room with four doors to test chambers." }
+  ],
+  "narrative_rules": [
+    "This is a testing environment. Describe events concisely.",
+    "Each room exercises a specific mechanic from steps 1-13."
+  ]
+}

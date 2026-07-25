@@ -1,0 +1,59 @@
+{
+  "campaign_id": "debug_campaign",
+  "campaign_name": "DEBUG CAMPAIGN",
+  "description": "Simple debug campaign: one central hub with four test rooms.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 50,
+    "starting_ac": 14,
+    "starting_gp": 100,
+    "starting_strength": 16,
+    "starting_dexterity": 16,
+    "starting_constitution": 16,
+    "starting_intelligence": 16,
+    "starting_wisdom": 16,
+    "starting_charisma": 16,
+    "starting_proficiency_bonus": 4,
+    "starting_inventory": [
+      { "id": "health_potion", "quantity": 5 },
+      { "id": "shortsword", "quantity": 1 },
+      { "id": "leather_armor", "quantity": 1 },
+      { "id": "thieves_tools", "quantity": 1 },
+      { "id": "torch", "quantity": 2 }
+    ],
+    "starting_equipped_weapon": "shortsword",
+    "starting_thieves_tools": true
+  },
+  "container_parts": {
+    "lock_statuses": [
+      { "name": "Simple Latch", "weight": 50.0, "tier": 1 },
+      { "name": "Rusty Lock", "weight": 35.0, "tier": 2 },
+      { "name": "Heavy Bolted Lock", "weight": 15.0, "tier": 3 }
+    ],
+    "conditions": [
+      { "name": "Rotting", "weight": 15.0, "tier": 1 },
+      { "name": "Standard", "weight": 40.0, "tier": 2 },
+      { "name": "Excellent", "weight": 30.0, "tier": 3 },
+      { "name": "Pristine", "weight": 15.0, "tier": 4 }
+    ],
+    "accent_materials": [
+      { "name": "Leather-Wrapped", "weight": 40.0, "tier": 1 },
+      { "name": "Iron-Banded", "weight": 30.0, "tier": 2 },
+      { "name": "Bronze-Studded", "weight": 20.0, "tier": 3 },
+      { "name": "Gem-Inlaid", "weight": 10.0, "tier": 4 }
+    ],
+    "core_materials": [
+      { "name": "Oak", "weight": 35.0, "tier": 1 },
+      { "name": "Pine", "weight": 30.0, "tier": 2 },
+      { "name": "Ironwood", "weight": 20.0, "tier": 3 },
+      { "name": "Elderwood", "weight": 15.0, "tier": 4 }
+    ],
+    "container_types": [
+      { "name": "Chest", "weight": 30.0, "tier": 1 },
+      { "name": "Crate", "weight": 25.0, "tier": 1 },
+      { "name": "Barrel", "weight": 20.0, "tier": 1 },
+      { "name": "Strongbox", "weight": 15.0, "tier": 2 },
+      { "name": "Trunk", "weight": 10.0, "tier": 2 }
+    ]
+  }
+}

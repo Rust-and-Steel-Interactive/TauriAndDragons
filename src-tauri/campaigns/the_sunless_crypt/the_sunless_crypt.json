@@ -1,0 +1,140 @@
+{
+  "id": "the_sunless_crypt",
+  "name": "The Sunless Crypt",
+  "rooms": [
+    {
+      "id": "room_entrance",
+      "name": "Crypt Entrance",
+      "description": "You stand at the crumbling entrance of the crypt. The air is cold, thick with the scent of damp earth and ancient decay. Flickering torchlight reveals a narrow stone staircase descending into darkness.",
+      "connections": ["room_corridor"],
+      "procedural_slots": {
+        "hidden_feature": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [],
+            "3-4": [
+              {
+                "type": "LOOT",
+                "id": "loot_rusty_sword",
+                "name": "Rusty Iron Shortsword",
+                "quantity": 1,
+                "item_type": "WEAPON",
+                "gp_value": 5,
+                "damage_dice": "1d6",
+                "damage_bonus": 0,
+                "weapon_type": "MELEE"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_corridor",
+      "name": "Dusty Corridor",
+      "description": "A narrow, dust-filled corridor. The walls are scored with deep scratches. It splits to the north and east.",
+      "connections": ["room_entrance", "room_armory", "room_library"],
+      "procedural_slots": {
+        "trap_slot": {
+          "roll": "1d6",
+          "results": {
+            "1-4": [],
+            "5-6": [
+              {
+                "type": "TRAP",
+                "id": "trap_dart",
+                "name": "Poison Dart Trap",
+                "dc": 12,
+                "damage": "1d6",
+                "damage_type": "poison"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_armory",
+      "name": "Ruined Armory",
+      "description": "Racks of rusted weapons line the walls. The smell of oxidized iron is overpowering. It looks picked clean, but a glint catches your eye.",
+      "connections": ["room_corridor"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "LOOT",
+                "id": "loot_iron_shield",
+                "name": "Rusted Iron Shield",
+                "quantity": 1,
+                "item_type": "ARMOR",
+                "gp_value": 10,
+                "ac_bonus": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_library",
+      "name": "Decaying Archive",
+      "description": "Shelves of rotting tomes stretch toward the ceiling. A faint, cold breeze emanates from a collapsed section of the north wall.",
+      "connections": ["room_corridor", "room_boss"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "LOOT",
+                "id": "loot_novice_staff",
+                "name": "Cracked Novice Oak Staff",
+                "quantity": 1,
+                "item_type": "WEAPON",
+                "gp_value": 15,
+                "damage_dice": "1d6",
+                "damage_bonus": 1,
+                "weapon_type": "MAGIC"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_boss",
+      "name": "Chamber of the Warden",
+      "description": "A cavernous room lit by a sickly green glow. In the center stands a stone sarcophagus, guarded by a skeletal figure wielding a rusted blade.",
+      "connections": ["room_library"],
+      "procedural_slots": {
+        "enemy_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "ENEMY",
+                "id": "enemy_skeleton_01",
+                "name": "Skeletal Warden",
+                "hp": 12,
+                "ac": 13
+              }
+            ],
+            "2": [
+              {
+                "type": "ENEMY",
+                "id": "enemy_skeleton_01",
+                "name": "Skeletal Warden",
+                "hp": 14,
+                "ac": 13
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

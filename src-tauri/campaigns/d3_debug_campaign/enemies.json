@@ -1,0 +1,93 @@
+{
+  "base_enemies": {
+    "rat": {
+      "name": "Giant Rat",
+      "enemy_class": "MONSTER",
+      "base_hp": 2,
+      "base_ac": 8,
+      "base_damage_dice": "1d2",
+      "base_attack_bonus": 1,
+      "base_xp": 5,
+      "strength": 4,
+      "dexterity": 14,
+      "constitution": 8,
+      "intelligence": 2,
+      "wisdom": 8,
+      "charisma": 2,
+      "perks": [],
+      "damage_profile": {},
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 1 }
+      ]
+    },
+    "zombie": {
+      "name": "Shambling Zombie",
+      "enemy_class": "UNDEAD",
+      "base_hp": 5,
+      "base_ac": 9,
+      "base_damage_dice": "1d4",
+      "base_attack_bonus": 2,
+      "base_xp": 10,
+      "strength": 12,
+      "dexterity": 6,
+      "constitution": 14,
+      "intelligence": 3,
+      "wisdom": 6,
+      "charisma": 3,
+      "perks": ["UNDEAD_FORTITUDE"],
+      "damage_profile": {
+        "resistances": ["NECROTIC", "POISON"],
+        "vulnerabilities": ["FIRE"]
+      },
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 1 }
+      ]
+    },
+    "fire_elemental": {
+      "name": "Fire Elemental",
+      "enemy_class": "ELEMENTAL",
+      "base_hp": 10,
+      "base_ac": 12,
+      "base_damage_dice": "2d6",
+      "base_attack_bonus": 5,
+      "base_xp": 50,
+      "strength": 10,
+      "dexterity": 16,
+      "constitution": 14,
+      "intelligence": 6,
+      "wisdom": 10,
+      "charisma": 8,
+      "perks": [],
+      "damage_profile": {
+        "immunities": ["FIRE"],
+        "vulnerabilities": ["COLD"]
+      },
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "VALUABLE", "rarity_min": 2, "rarity_max": 3 }
+      ]
+    },
+    "ice_golem": {
+      "name": "Ice Golem",
+      "enemy_class": "CONSTRUCT",
+      "base_hp": 15,
+      "base_ac": 16,
+      "base_damage_dice": "1d10",
+      "base_attack_bonus": 6,
+      "base_xp": 75,
+      "strength": 18,
+      "dexterity": 8,
+      "constitution": 16,
+      "intelligence": 4,
+      "wisdom": 8,
+      "charisma": 4,
+      "perks": [],
+      "damage_profile": {
+        "resistances": ["COLD"],
+        "vulnerabilities": ["FIRE"]
+      },
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "MELEE", "rarity_min": 2, "rarity_max": 3 }
+      ]
+    }
+  }
+}

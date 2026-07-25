@@ -1,0 +1,17 @@
+{
+  "world_name": "Debug Realm D2",
+  "tone": "Testing environment for belt, utility slot, lantern, and charm mechanics.",
+  "setting_lore": "A debug dungeon with five rooms testing belt equipment, utility slots, lantern fuel/refuel, torch mechanics, and charm AC bonuses.",
+  "factions": [],
+  "key_locations": [
+    { "name": "Equipment Prep Room", "description": "Starting room with a workbench. Player has belt, lantern, torch, oil flasks, and charms." },
+    { "name": "Dark Hallway", "description": "A long dark corridor for testing light radius penalties when light source is belt-mounted." },
+    { "name": "Armoury", "description": "Contains chests with belts and charms to test equipping/upgrading." },
+    { "name": "Refueling Station", "description": "Supply cache with oil flasks for testing lantern refueling." },
+    { "name": "Testing Grounds", "description": "Combat room with enemies to test charm AC bonus and belt-mounted combat." }
+  ],
+  "narrative_rules": [
+    "This is a testing environment. Describe events concisely.",
+    "Everything is designed to be tested, killed, or collected."
+  ]
+}

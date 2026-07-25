@@ -1,0 +1,68 @@
+{
+  "base_enemies": {
+    "twisted_walker": {
+      "name": "Twisted Walker",
+      "enemy_class": "MONSTER",
+      "base_hp": 10,
+      "base_ac": 11,
+      "base_damage_dice": "1d4",
+      "base_attack_bonus": 2,
+      "base_xp": 15,
+      "strength": 12,
+      "dexterity": 8,
+      "constitution": 14,
+      "intelligence": 4,
+      "wisdom": 6,
+      "charisma": 3,
+      "perks": ["UNDEAD_FORTITUDE"],
+      "loot_table": [
+        { "drop_chance": 40, "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 2 }
+      ]
+    },
+    "wisp": {
+      "name": "Ghostlight Wisp",
+      "enemy_class": "MONSTER",
+      "base_hp": 6,
+      "base_ac": 14,
+      "base_damage_dice": "1d6",
+      "base_attack_bonus": 3,
+      "base_xp": 20,
+      "strength": 4,
+      "dexterity": 16,
+      "constitution": 8,
+      "intelligence": 10,
+      "wisdom": 12,
+      "charisma": 14,
+      "perks": ["NIMBLE_ESCAPE", "MAGIC_RESISTANCE"],
+      "loot_table": [
+        { "drop_chance": 60, "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }
+      ]
+    },
+    "corrupted_treant": {
+      "name": "Corrupted Treant",
+      "enemy_class": "MONSTER",
+      "base_hp": 20,
+      "base_ac": 15,
+      "base_damage_dice": "1d10",
+      "base_attack_bonus": 4,
+      "base_xp": 50,
+      "strength": 18,
+      "dexterity": 6,
+      "constitution": 16,
+      "intelligence": 8,
+      "wisdom": 10,
+      "charisma": 6,
+      "armour_config": {
+        "slots": ["CHEST"],
+        "rarity_min": 1,
+        "rarity_max": 2,
+        "drop_chance": 30
+      },
+      "perks": ["UNDEAD_FORTITUDE", "BERSERKER"],
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "VALUABLE", "rarity_min": 2, "rarity_max": 3 },
+        { "drop_chance": 50, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 3 }
+      ]
+    }
+  }
+}

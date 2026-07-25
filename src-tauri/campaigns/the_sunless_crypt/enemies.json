@@ -1,0 +1,115 @@
+{
+  "base_enemies": {
+    "skeletal_warden": {
+      "name": "Skeletal Warden",
+      "enemy_class": "UNDEAD",
+      "base_hp": 12,
+      "base_ac": 13,
+      "base_damage_dice": "1d6",
+      "base_attack_bonus": 2,
+      "base_xp": 25,
+      "strength": 14,
+      "dexterity": 10,
+      "constitution": 14,
+      "intelligence": 6,
+      "wisdom": 8,
+      "charisma": 5,
+      "perks": ["UNDEAD_FORTITUDE"],
+      "loot_table": [
+        { "drop_chance": 50, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 2 }
+      ]
+    },
+    "skeletal_hound": {
+      "name": "Skeletal Hound",
+      "enemy_class": "UNDEAD",
+      "base_hp": 8,
+      "base_ac": 12,
+      "base_damage_dice": "1d4",
+      "base_attack_bonus": 4,
+      "base_xp": 15,
+      "strength": 12,
+      "dexterity": 14,
+      "constitution": 12,
+      "intelligence": 3,
+      "wisdom": 6,
+      "charisma": 4,
+      "perks": ["PACK_TACTICS"],
+      "loot_table": []
+    },
+    "cultist_zealot": {
+      "name": "Cultist Zealot",
+      "enemy_class": "HUMANOID",
+      "base_hp": 16,
+      "base_ac": 12,
+      "base_damage_dice": "1d4",
+      "base_attack_bonus": 4,
+      "base_xp": 50,
+      "strength": 12,
+      "dexterity": 12,
+      "constitution": 13,
+      "intelligence": 10,
+      "wisdom": 14,
+      "charisma": 12,
+      "armour_config": {
+        "slots": ["CHEST", "HEAD", "HANDS", "FEET"],
+        "rarity_min": 1,
+        "rarity_max": 2,
+        "drop_chance": 40
+      },
+      "perks": ["ZEALOT_RAGE"],
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 3 }
+      ]
+    },
+    "goblin_scout": {
+      "name": "Goblin Scout",
+      "enemy_class": "HUMANOID",
+      "base_hp": 7,
+      "base_ac": 11,
+      "base_damage_dice": "1d4",
+      "base_attack_bonus": 3,
+      "base_xp": 10,
+      "strength": 8,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 9,
+      "wisdom": 10,
+      "charisma": 7,
+      "armour_config": {
+        "slots": ["CHEST"],
+        "rarity_min": 1,
+        "rarity_max": 2,
+        "drop_chance": 60
+      },
+      "perks": ["NIMBLE_ESCAPE"],
+      "loot_table": [
+        { "drop_chance": 30, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 1 }
+      ]
+    },
+    "goblin_brute": {
+      "name": "Goblin Brute",
+      "enemy_class": "HUMANOID",
+      "base_hp": 12,
+      "base_ac": 12,
+      "base_damage_dice": "1d6",
+      "base_attack_bonus": 2,
+      "base_xp": 20,
+      "strength": 14,
+      "dexterity": 10,
+      "constitution": 13,
+      "intelligence": 8,
+      "wisdom": 8,
+      "charisma": 6,
+      "armour_config": {
+        "slots": ["CHEST", "HEAD"],
+        "rarity_min": 1,
+        "rarity_max": 2,
+        "drop_chance": 50
+      },
+      "perks": ["BRUTE_FORCE"],
+      "loot_table": [
+        { "drop_chance": 40, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 2 }
+      ]
+    }
+  }
+}

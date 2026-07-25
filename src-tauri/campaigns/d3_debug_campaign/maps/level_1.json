@@ -1,0 +1,115 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "d3_hub",
+      "name": "D3 Hub",
+      "description": "A stone chamber with four doorways leading to test rooms for damage types, profiles, weapon range, and typo fallback.",
+      "connections": ["damage_type_test", "resistance_test", "weapon_range_test", "typo_trap_test"],
+      "room_template": "medium_room",
+      "interior_width": 7,
+      "interior_height": 7,
+      "wall_thickness": 1
+    },
+    {
+      "id": "damage_type_test",
+      "name": "Damage Type Test — Fire Elemental",
+      "description": "A fire elemental flickers in the center. Immune to fire, vulnerable to cold.",
+      "connections": ["", "", "d3_hub", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "fire_elemental": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "fire_elemental", "scale": 1.0 }]
+          }
+        },
+        "chest": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 0, "dc": 0, "item_class": "MAGIC", "rarity_min": 2, "rarity_max": 3, "tier_bias": 0.5 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "resistance_test",
+      "name": "Resistance Test — Ice Golem + Zombies",
+      "description": "An ice golem (resists cold, vulnerable to fire) guards the room with two shambling zombies (resist necrotic/poison, vulnerable to fire).",
+      "connections": ["", "", "", "d3_hub"],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "golem": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "ice_golem", "scale": 1.0 }]
+          }
+        },
+        "zombie1": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "zombie", "scale": 1.0 }]
+          }
+        },
+        "zombie2": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "zombie", "scale": 1.0 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "weapon_range_test",
+      "name": "Weapon Range Test — Rat",
+      "description": "A rat at range. Test ranged combat with longbow (normal:16, long:64) vs shortsword (normal:1). Starting inventory includes both.",
+      "connections": ["d3_hub", "", "", ""],
+      "room_template": "large_room",
+      "interior_width": 30,
+      "interior_height": 20,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "rat": {
+          "roll": "1d4+2",
+          "results": {
+            "1-6": [{ "type": "SPAWN_ENEMY", "enemy_id": "rat", "scale": 1.0 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "typo_trap_test",
+      "name": "Typo Trap Test",
+      "description": "A room with traps that have deliberately misspelled damage_type values to test the from_loose_str fallback.",
+      "connections": ["", "d3_hub", "", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "trap_fire": {
+          "roll": "1d1",
+          "results": {
+            "1": [
+              { "type": "TRAP", "id": "poisn_dart", "name": "Poison Dart Trap", "dc": 10, "damage": "1d6", "damage_type": "posion" }
+            ]
+          }
+        },
+        "trap_cold": {
+          "roll": "1d1",
+          "results": {
+            "1": [
+              { "type": "TRAP", "id": "freeze_trap", "name": "Freeze Trap", "dc": 12, "damage": "2d4", "damage_type": "COLD" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "world_name": "The Hollow Chapel",
+  "tone": "Gothic horror, desolate, sinister, claustrophobic.",
+  "setting_lore": "High in the Greyfang Mountains stands the Hollow Chapel, a stone sanctuary abandoned after a schism in the Church of the Silver Flame. Exiled cultists of the Dusk Covenant seized it decades ago, conducting rituals in the crypts below. Recently, they awakened something in the darkness beneath the altar. The mountain trail is now overgrown, and villagers speak of chanting echoing from the chapel at night.",
+  "factions": [
+    { "name": "Dusk Covenant", "description": "A heretical sect that worships the void between stars. They wear grey robes and conduct blood rituals in the chapel crypts." }
+  ],
+  "key_locations": [
+    { "name": "The Altar Room", "description": "The inner sanctum where the covenant's leader conducted the final ritual that awakened the guardian." }
+  ],
+  "narrative_rules": [
+    "The chapel is cold—unnaturally so. Breath fogs even in summer.",
+    "The cultists chant in a language that sounds like stone grinding on stone.",
+    "The guardian does not speak, it simply advances."
+  ]
+}

@@ -1,0 +1,386 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "room_entrance",
+      "name": "Crypt Entrance",
+      "description": "You stand at the crumbling entrance of the crypt. The air is cold, thick with the scent of damp earth and ancient decay. Flickering torchlight reveals a narrow stone staircase descending into darkness.",
+      "connections": ["room_grand_hall"],
+      "procedural_slots": {
+        "hidden_feature": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [],
+            "3-4": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "MELEE",
+                "rarity_min": 1,
+                "rarity_max": 2
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_grand_hall",
+      "name": "Grand Hall",
+      "description": "A vast hall supported by crumbling pillars. Faded murals depict ancient battles against shadowy foes. Passageways branch in three directions.",
+      "connections": ["room_entrance", "room_armory", "room_trophy", "room_kitchen"],
+      "procedural_slots": {
+        "encounter_slot": {
+          "roll": "1d4",
+          "results": {
+            "1-3": [],
+            "4": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_hound",
+                "scale": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_armory",
+      "name": "Ruined Armory",
+      "description": "Racks of rusted weapons line the walls. The smell of oxidized iron is overpowering. It looks picked clean, but a glint catches your eye.",
+      "connections": ["room_grand_hall"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "ARMOR",
+                "rarity_min": 2,
+                "rarity_max": 3
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_trophy",
+      "name": "Trophy Room",
+      "description": "Heads of long-dead beasts line the walls, their glassy eyes following your every move. A plaque gleams in the dim light.",
+      "connections": ["room_grand_hall", "room_guard_post"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d3",
+          "results": {
+            "1-2": [],
+            "3": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "VALUABLE",
+                "rarity_min": 2,
+                "rarity_max": 4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_guard_post",
+      "name": "Guard Post",
+      "description": "A small chamber with arrow slits overlooking a dark chasm. Two goblins are arguing over a pile of coins.",
+      "connections": ["room_trophy", "room_barracks"],
+      "procedural_slots": {
+        "enemy_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_scout",
+                "scale": 1.0
+              }
+            ],
+            "2": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_scout",
+                "scale": 1.0
+              },
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_scout",
+                "scale": 0.8
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_barracks",
+      "name": "Goblin Barracks",
+      "description": "A messy living quarters filled with straw pallets and stolen goods. A large goblin stands up from a makeshift throne, brandishing a club.",
+      "connections": ["room_guard_post", "room_storage"],
+      "procedural_slots": {
+        "enemy_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_brute",
+                "scale": 1.0
+              }
+            ],
+            "2": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_brute",
+                "scale": 1.0
+              },
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "goblin_scout",
+                "scale": 0.8
+              }
+            ]
+          }
+        },
+        "loot_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "VALUABLE",
+                "rarity_min": 1,
+                "rarity_max": 2
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_storage",
+      "name": "Storage Room",
+      "description": "Crates and barrels are stacked haphazardly. Some have been broken open, their contents long since looted. A faint scurrying sound echoes from the shadows.",
+      "connections": ["room_barracks", "room_corridor"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d3",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "CONSUMABLE",
+                "rarity_min": 1,
+                "rarity_max": 2
+              }
+            ],
+            "3": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "CONSUMABLE",
+                "rarity_min": 2,
+                "rarity_max": 3
+              },
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "CONSUMABLE",
+                "rarity_min": 1,
+                "rarity_max": 2
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_kitchen",
+      "name": "Abandoned Kitchen",
+      "description": "The stench of spoiled food and rot fills this large kitchen. Rusted pots hang from hooks. A narrow service passage leads deeper underground.",
+      "connections": ["room_grand_hall", "room_corridor"],
+      "procedural_slots": {
+        "encounter_slot": {
+          "roll": "1d4",
+          "results": {
+            "1-3": [],
+            "4": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_hound",
+                "scale": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_corridor",
+      "name": "Dark Passage",
+      "description": "A winding passage lined with skulls set into niches. The air grows colder with each step. A faint chanting can be heard from ahead.",
+      "connections": ["room_storage", "room_kitchen", "room_library", "room_ritual_chamber"],
+      "procedural_slots": {
+        "trap_slot": {
+          "roll": "1d4",
+          "results": {
+            "1-3": [],
+            "4": [
+              {
+                "type": "TRAP",
+                "id": "trap_dart",
+                "name": "Poison Dart Trap",
+                "dc": 12,
+                "damage": "1d6",
+                "damage_type": "poison"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_library",
+      "name": "Decaying Archive",
+      "description": "Shelves of rotting tomes stretch toward the ceiling. A faint, cold breeze emanates from a collapsed section of the north wall, carrying whispers of forgotten lore.",
+      "connections": ["room_corridor"],
+      "procedural_slots": {
+        "loot_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "MAGIC",
+                "rarity_min": 2,
+                "rarity_max": 3
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_ritual_chamber",
+      "name": "Ritual Chamber",
+      "description": "A dark chamber lit by flickering candles arranged in a pentagram. Cultists chant around a central altar. The air hums with dark energy.",
+      "connections": ["room_corridor", "room_boss"],
+      "procedural_slots": {
+        "enemy_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "cultist_zealot",
+                "scale": 1.0
+              }
+            ],
+            "2": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "cultist_zealot",
+                "scale": 1.2
+              },
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_hound",
+                "scale": 1.0
+              }
+            ]
+          }
+        },
+        "loot_slot": {
+          "roll": "1d3",
+          "results": {
+            "1": [],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "MAGIC",
+                "rarity_min": 2,
+                "rarity_max": 3
+              }
+            ],
+            "3": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "CONSUMABLE",
+                "rarity_min": 2,
+                "rarity_max": 4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "room_boss",
+      "name": "Chamber of the Warden",
+      "description": "A cavernous room lit by a sickly green glow. In the center stands a stone sarcophagus, guarded by a skeletal figure wielding a rusted blade. This is the heart of the crypt.",
+      "connections": ["room_ritual_chamber"],
+      "procedural_slots": {
+        "enemy_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_warden",
+                "scale": 1.0
+              }
+            ],
+            "2": [
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_warden",
+                "scale": 1.2
+              },
+              {
+                "type": "SPAWN_ENEMY",
+                "enemy_id": "skeletal_hound",
+                "scale": 1.0
+              }
+            ]
+          }
+        },
+        "treasure_slot": {
+          "roll": "1d2",
+          "results": {
+            "1": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "VALUABLE",
+                "rarity_min": 3,
+                "rarity_max": 4
+              }
+            ],
+            "2": [
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "VALUABLE",
+                "rarity_min": 3,
+                "rarity_max": 4
+              },
+              {
+                "type": "GENERATE_ITEM",
+                "item_class": "ARMOR",
+                "rarity_min": 3,
+                "rarity_max": 4
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

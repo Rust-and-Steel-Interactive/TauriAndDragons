@@ -1,0 +1,50 @@
+{
+  "base_enemies": {
+    "cultist_acolyte": {
+      "name": "Cultist Acolyte",
+      "enemy_class": "HUMANOID",
+      "base_hp": 8,
+      "base_ac": 12,
+      "base_damage_dice": "1d6",
+      "base_attack_bonus": 3,
+      "base_xp": 25,
+      "strength": 10,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 12,
+      "wisdom": 10,
+      "charisma": 14,
+      "perks": ["NIMBLE_ESCAPE"],
+      "loot_table": [
+        { "drop_chance": 50, "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 2 },
+        { "drop_chance": 30, "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }
+      ]
+    },
+    "chapel_guardian": {
+      "name": "Chapel Guardian",
+      "enemy_class": "CONSTRUCT",
+      "base_hp": 18,
+      "base_ac": 16,
+      "base_damage_dice": "1d8",
+      "base_attack_bonus": 4,
+      "base_xp": 40,
+      "strength": 16,
+      "dexterity": 8,
+      "constitution": 16,
+      "intelligence": 4,
+      "wisdom": 6,
+      "charisma": 3,
+      "armour_config": {
+        "slots": ["CHEST"],
+        "rarity_min": 1,
+        "rarity_max": 2,
+        "drop_chance": 40
+      },
+      "perks": ["UNDEAD_FORTITUDE", "REGENERATION"],
+      "loot_table": [
+        { "drop_chance": 100, "item_class": "VALUABLE", "rarity_min": 2, "rarity_max": 3 },
+        { "drop_chance": 40, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 3 }
+      ]
+    }
+  }
+}

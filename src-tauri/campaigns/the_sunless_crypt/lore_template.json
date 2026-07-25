@@ -1,0 +1,26 @@
+{
+  "world_name": "The Sunless Crypt",
+  "tone": "Grimdark, claustrophobic, oppressive, dark fantasy.",
+  "setting_lore": "The Sunless Crypt is the buried ruin of the Kingdom of Oakhaven, which fell to a necrotic plague centuries ago. The air smells of damp earth and decay. Magic here is volatile; Archwood staves are required to safely channel arcane energy without the spell turning necrotic.",
+  "factions": [
+    {
+      "name": "The Skeletal Wardens",
+      "description": "Undead remnants of the Oakhaven Royal Guard. They mindlessly guard the deeper chambers."
+    },
+    {
+      "name": "The Cult of the Deep",
+      "description": "Mad zealots who worship the plague. They use daggers and poison."
+    }
+  ],
+  "key_locations": [
+    {
+      "name": "The Decaying Archive",
+      "description": "A ruined library where the knowledge of Oakhaven's metallurgy (Mithril, Steel) was kept."
+    }
+  ],
+  "narrative_rules": [
+    "Do NOT mention elves, dwarves, or happy forests. This is a human ruin.",
+    "Do NOT invent futuristic technology or firearms.",
+    "Spells should be described as volatile, crackling energy, not elegant fireworks."
+  ]
+}

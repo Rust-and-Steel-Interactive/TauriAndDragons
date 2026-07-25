@@ -1,0 +1,17 @@
+{
+  "world_name": "The Curse of Blackwood",
+  "tone": "Dark fairy-tale, eerie, melancholic, nature-horror.",
+  "setting_lore": "The Blackwood was once a thriving forest, home to the Sylvari elves. A century ago, a blight cursed the land. Trees gained sentience and malice. The elves vanished. Now the forest twists all who enter, and the trees whisper ancient grudges.",
+  "factions": [
+    { "name": "Twisted Wardens", "description": "Corrupted treants that patrol the forest, hunting intruders." },
+    { "name": "Ghostlight Wisps", "description": "Mischievous spirits that lead travelers astray." }
+  ],
+  "key_locations": [
+    { "name": "The Heartwood Glade", "description": "The blighted center of the forest where the curse originated." }
+  ],
+  "narrative_rules": [
+    "The forest is alive and reacts to violence.",
+    "Fire is both feared and effective against the corrupted flora.",
+    "The trees remember your passage."
+  ]
+}

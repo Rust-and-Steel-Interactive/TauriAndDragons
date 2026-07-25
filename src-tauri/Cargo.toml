@@ -1,0 +1,43 @@
+[package]
+name = "tauri-and-dragons"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "tauri_and_dragons_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-fs = "2"
+anyhow = "1"
+thiserror = "2"
+rand = "0.8"
+rand_chacha = "0.3"      # Deterministic RNG for procedural seeding
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+hf-hub = { version = "1", features = ["blocking"] }     # For downloading models
+dirs = "5"           # For cross-platform App Data paths
+indicatif = "0.17"
+
+# We will uncomment this in Phase 2 when we do the LLM spike
+llama-cpp-2 = { version = "0.1.151", features = ["metal"] }
+
+
+reqwest = { version = "0.12", features = ["stream"] }
+futures-util = "0.3"
+encoding_rs = "0.8"
+uuid = { version = "1.8", features = ["v4"] }

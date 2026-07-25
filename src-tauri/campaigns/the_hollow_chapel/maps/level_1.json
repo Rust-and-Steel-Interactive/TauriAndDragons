@@ -1,0 +1,86 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "chapel_nave",
+      "name": "Chapel Nave",
+      "description": "The main hall of the chapel lies in ruins. Pews are overturned, stained glass shattered. Cold mountain light filters through gaping holes in the roof. A stone archway leads deeper into the chapel. Faded frescoes on the walls depict saints with their faces scratched out.",
+      "connections": ["crypt_ossuary"],
+      "room_template": "medium_hall",
+      "interior_width": 5,
+      "interior_height": 10,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "hidden_supply": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "GENERATE_HIDDEN_LOOT", "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 2 }],
+            "3-4": [{ "type": "GENERATE_ITEM", "item_class": "MELEE", "rarity_min": 1, "rarity_max": 1 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "crypt_ossuary",
+      "name": "Crypt Ossuary",
+      "description": "The chapel's crypt has been converted into a ritual chamber. Candles flicker on ledges carved into the bone-white walls. A circle of runes is etched into the stone floor. Cultists chant in the shadows. A heavy iron door leads to the altar room beyond.",
+      "connections": ["chapel_nave", "altar_room"],
+      "room_template": "medium_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "cultist_patrol": {
+          "roll": "1d4",
+          "results": {
+            "1-3": [{ "type": "SPAWN_ENEMY", "enemy_id": "cultist_acolyte", "scale": 1.0 }],
+            "4": [
+              { "type": "SPAWN_ENEMY", "enemy_id": "cultist_acolyte", "scale": 1.0 },
+              { "type": "SPAWN_ENEMY", "enemy_id": "cultist_acolyte", "scale": 0.8 }
+            ]
+          }
+        },
+        "ossuary_loot": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }],
+            "3": [{ "type": "GENERATE_ITEM", "item_class": "CONSUMABLE", "rarity_min": 2, "rarity_max": 3 }],
+            "4": [{ "type": "SPAWN_CHEST", "locked_chance": 30, "dc": 11, "item_class": "ARMOR", "rarity_min": 1, "rarity_max": 2, "tier_bias": 0.3 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "altar_room",
+      "name": "Altar Room",
+      "description": "The inner sanctum. An altar of black stone dominates the chamber, and behind it stands a towering suit of armor fused with dark crystal—the Chapel Guardian, awakened by the cult's final ritual. The air hums with malevolent energy.",
+      "connections": ["crypt_ossuary"],
+      "room_template": "medium_room",
+      "interior_width": 7,
+      "interior_height": 7,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "guardian_boss": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "chapel_guardian", "scale": 1.0 }]
+          }
+        },
+        "altar_treasure": {
+          "roll": "1d4",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "MAGIC", "rarity_min": 3, "rarity_max": 4 }],
+            "2": [{ "type": "GENERATE_ITEM", "item_class": "MELEE", "rarity_min": 2, "rarity_max": 3 }],
+            "3-4": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 2, "rarity_max": 3 }]
+          }
+        },
+        "offering_chest": {
+          "roll": "1d2",
+          "results": {
+            "1-2": [{ "type": "SPAWN_CHEST", "locked_chance": 60, "dc": 13, "item_class": "MAGIC", "rarity_min": 2, "rarity_max": 4, "tier_bias": 1.0 }]
+          }
+        }
+      }
+    }
+  ]
+}

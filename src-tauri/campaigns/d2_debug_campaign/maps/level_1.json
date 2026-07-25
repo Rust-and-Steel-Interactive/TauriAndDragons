@@ -1,0 +1,109 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "equipment_prep",
+      "name": "Equipment Prep Room",
+      "description": "A well-lit stone chamber with workbenches. Test your belt, lantern, and torch gear here before moving on.\n\nTry: equip the leather belt from inventory, light the lantern (tinderbox + lantern in hand), mount it to your belt, then explore the dark hallway to see the -1 vision radius penalty.",
+      "connections": ["dark_hallway", "armoury", "refueling_station", "testing_grounds"],
+      "room_template": "medium_room",
+      "interior_width": 7,
+      "interior_height": 7,
+      "wall_thickness": 1
+    },
+    {
+      "id": "dark_hallway",
+      "name": "Dark Hallway",
+      "description": "A long, pitch-black corridor. The darkness here was designed to test light radius.\n\nTry: Compare vision radius with a torch/lantern in-hand vs. belt-mounted. Belt-mounted light suffers -1 radius penalty.",
+      "connections": ["", "testing_grounds", "", "equipment_prep"],
+      "room_template": "medium_room",
+      "interior_width": 11,
+      "interior_height": 5,
+      "wall_thickness": 1
+    },
+    {
+      "id": "armoury",
+      "name": "Armoury",
+      "description": "An old armoury with weapon racks and belt displays. You might find better belts here.\n\nTry: Equip a found belt (higher tier = more utility slots). Unequip your current belt to swap.",
+      "connections": ["", "", "", "equipment_prep"],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "belt_chest": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 0, "dc": 0, "item_class": "BELT", "rarity_min": 1, "rarity_max": 4 }]
+          }
+        },
+        "charm_chest": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 0, "dc": 0, "item_class": "CHARM", "rarity_min": 1, "rarity_max": 4 }]
+          }
+        },
+        "loot": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "refueling_station",
+      "name": "Refueling Station",
+      "description": "An old supply cache. You find oil flasks and fuel for your lantern.\n\nTry: Refill your lantern by opening inventory and clicking REFILL_LANTERN (requires oil flask in inventory and lantern in hand or inventory).",
+      "connections": ["equipment_prep", "", "", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "oil_chest": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 0, "dc": 0, "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 1 }]
+          }
+        },
+        "oil_loot": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 1 }]
+          }
+        },
+        "oil_loot2": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 1 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "testing_grounds",
+      "name": "Testing Grounds",
+      "description": "A zombie shambles in the shadows. Test combat with your belt-mounted light source and charm AC bonus.\n\nTry: Keep a charm_of_protection in a utility slot for +1 AC. The belt-mounted light source will give you less vision but frees your hands for the shortsword.",
+      "connections": ["", "", "equipment_prep", "dark_hallway"],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "zombie": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "debug_zombie", "scale": 1.0 }]
+          }
+        },
+        "rat": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "debug_rat", "scale": 1.0 }]
+          }
+        }
+      }
+    }
+  ]
+}

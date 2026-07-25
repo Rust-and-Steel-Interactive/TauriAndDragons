@@ -1,0 +1,108 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "forest_edge",
+      "name": "Forest Edge",
+      "description": "The treeline looms ahead, gnarled branches reaching like skeletal fingers. An ancient path, overgrown with thorny vines, leads into the darkness.",
+      "connections": ["whispering_glade"],
+      "procedural_slots": {
+        "hidden_feature": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "GENERATE_HIDDEN_LOOT", "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 1 }],
+            "3-4": [{ "type": "GENERATE_ITEM", "item_class": "MELEE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "whispering_glade",
+      "name": "Whispering Glade",
+      "description": "The trees here seem to bend toward you, their leaves rustling with faint, unintelligible whispers. A faint blue light flickers between the trunks.",
+      "connections": ["forest_edge", "ruined_shrine", "heartwood_path"],
+      "procedural_slots": {
+        "encounter": {
+          "roll": "1d6",
+          "results": {
+            "1-3": [{ "type": "SPAWN_ENEMY", "enemy_id": "twisted_walker", "scale": 1.0 }],
+            "4-5": [{ "type": "SPAWN_ENEMY", "enemy_id": "wisp", "scale": 1.0 }],
+            "6": [{ "type": "SPAWN_ENEMY", "enemy_id": "wisp", "scale": 1.2 }]
+          }
+        },
+        "hidden_treasure": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "GENERATE_HIDDEN_LOOT", "item_class": "CONSUMABLE", "rarity_min": 1, "rarity_max": 2 }],
+            "3": [{ "type": "GENERATE_HIDDEN_LOOT", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }],
+            "4": [{ "type": "GENERATE_HIDDEN_LOOT", "item_class": "MAGIC", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "ruined_shrine",
+      "name": "Ruined Shrine",
+      "description": "Crumbled stone pillars surround a moss-covered altar. Ancient carvings depict elves communing with the forest. A chest sits behind the altar.",
+      "connections": ["whispering_glade"],
+      "procedural_slots": {
+        "chest_loot": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 40, "dc": 12, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 3, "tier_bias": 0.5 }]
+          }
+        },
+        "guardian": {
+          "roll": "1d4",
+          "results": {
+            "1-3": [{ "type": "SPAWN_ENEMY", "enemy_id": "twisted_walker", "scale": 0.8 }],
+            "4": [{ "type": "SPAWN_ENEMY", "enemy_id": "corrupted_treant", "scale": 0.8 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "heartwood_path",
+      "name": "Heartwood Path",
+      "description": "The forest darkens. The whispers grow louder, almost forming words. The path is lined with twisted roots that shift when you are not looking.",
+      "connections": ["whispering_glade", "heartwood_glade"],
+      "procedural_slots": {
+        "trap": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "TRAP", "id": "entangling_roots", "name": "Entangling Roots", "dc": 12, "damage": "1d4", "damage_type": "piercing" }],
+            "3-4": []
+          }
+        },
+        "ambush": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "SPAWN_ENEMY", "enemy_id": "twisted_walker", "scale": 1.0 }],
+            "3-4": []
+          }
+        }
+      }
+    },
+    {
+      "id": "heartwood_glade",
+      "name": "Heartwood Glade",
+      "description": "The heart of the curse. A massive corrupted treant, fused with the ancient elf-tree, pulses with dark energy. The ground is littered with bones and lost treasures.",
+      "connections": ["heartwood_path"],
+      "procedural_slots": {
+        "boss": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "corrupted_treant", "scale": 1.2 }]
+          }
+        },
+        "treasure": {
+          "roll": "1d4",
+          "results": {
+            "1-2": [{ "type": "GENERATE_ITEM", "item_class": "MAGIC", "rarity_min": 2, "rarity_max": 4 }],
+            "3-4": [{ "type": "GENERATE_ITEM", "item_class": "ARMOR", "rarity_min": 2, "rarity_max": 3 }]
+          }
+        }
+      }
+    }
+  ]
+}

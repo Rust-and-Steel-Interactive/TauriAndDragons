@@ -1,0 +1,13 @@
+{
+  "world_name": "Debug Realm",
+  "tone": "Testing environment. No stakes.",
+  "setting_lore": "A simple testing ground with a central hub and four adjacent rooms.",
+  "factions": [],
+  "key_locations": [
+    { "name": "Central Hub", "description": "Starting room with four doors." }
+  ],
+  "narrative_rules": [
+    "This is a testing environment. Describe events concisely.",
+    "Nothing is dangerous here — everything is designed to be killed or collected."
+  ]
+}

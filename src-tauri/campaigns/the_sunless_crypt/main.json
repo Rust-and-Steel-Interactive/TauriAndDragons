@@ -1,0 +1,26 @@
+{
+  "campaign_id": "the_sunless_crypt",
+  "campaign_name": "The Sunless Crypt",
+  "description": "A dark, procedurally seeded dungeon crawl.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 24,
+    "starting_ac": 12,
+    "starting_gp": 10,
+    "starting_strength": 14,
+    "starting_dexterity": 15,
+    "starting_constitution": 13,
+    "starting_intelligence": 10,
+    "starting_wisdom": 12,
+    "starting_charisma": 8,
+    "starting_proficiency_bonus": 2,
+    "starting_inventory": [
+      { "id": "health_potion", "quantity": 2 },
+      { "id": "dagger", "quantity": 1 },
+      { "id": "leather_armor", "quantity": 1 },
+      { "id": "thieves_tools", "quantity": 1 }
+    ],
+    "starting_equipped_weapon": "dagger",
+    "starting_thieves_tools": true
+  }
+}

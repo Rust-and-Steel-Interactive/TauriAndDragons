@@ -1,0 +1,117 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "central_hub",
+      "name": "Central Hub",
+      "description": "A plain stone chamber with four doorways. Each door leads to a different test room.",
+      "connections": ["try_combat_1", "try_chest", "try_loot", "try_combat_2"],
+      "room_template": "medium_room",
+      "interior_width": 7,
+      "interior_height": 7,
+      "wall_thickness": 1
+    },
+    {
+      "id": "try_combat_1",
+      "name": "Combat Test (Rat)",
+      "description": "A rat scuttles in the corner. Attack it to test combat.",
+      "connections": ["", "", "central_hub", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "rat": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "debug_rat", "scale": 1.0 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "try_chest",
+      "name": "Chest Test",
+      "description": "A locked chest sits against the wall.",
+      "connections": ["", "", "", "central_hub"],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "chest": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 100, "dc": 10, "item_class": "MELEE", "rarity_min": 1, "rarity_max": 2, "tier_bias": 0.0 }]
+          }
+        },
+        "chest2": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_CHEST", "locked_chance": 0, "dc": 0, "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2, "tier_bias": 0.0 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "try_loot",
+      "name": "Loot Test",
+      "description": "Valuables are scattered on the floor.",
+      "connections": ["central_hub", "", "", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "loot": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        },
+        "loot2": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        },
+        "loot3": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        },
+        "loot4": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        },
+        "loot5": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "GENERATE_ITEM", "item_class": "VALUABLE", "rarity_min": 1, "rarity_max": 2 }]
+          }
+        }
+      }
+    },
+    {
+      "id": "try_combat_2",
+      "name": "Combat Test (Zombie)",
+      "description": "A shambling zombie lurches toward you.",
+      "connections": ["", "central_hub", "", ""],
+      "room_template": "small_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "zombie": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "debug_zombie", "scale": 1.0 }]
+          }
+        }
+      }
+    }
+  ]
+}

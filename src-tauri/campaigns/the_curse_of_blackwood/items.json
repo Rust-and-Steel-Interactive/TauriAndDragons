@@ -1,0 +1,241 @@
+{
+    "base_items": {
+        "dagger": {
+            "name": "Dagger",
+            "item_class": "MELEE",
+            "base_damage_dice": "1d4",
+            "weight": 1.0,
+            "base_value": 2,
+            "damage_type": "piercing"
+        },
+        "shortsword": {
+            "name": "Shortsword",
+            "item_class": "MELEE",
+            "base_damage_dice": "1d6",
+            "weight": 2.0,
+            "base_value": 10,
+            "damage_type": "slashing"
+        },
+        "longsword": {
+            "name": "Longsword",
+            "item_class": "MELEE",
+            "base_damage_dice": "1d8",
+            "weight": 3.0,
+            "base_value": 15,
+            "damage_type": "slashing"
+        },
+        "mace": {
+            "name": "Mace",
+            "item_class": "MELEE",
+            "base_damage_dice": "1d6",
+            "weight": 2.0,
+            "base_value": 10,
+            "damage_type": "bludgeoning"
+        },
+        "warhammer": {
+            "name": "Warhammer",
+            "item_class": "MELEE",
+            "base_damage_dice": "1d8",
+            "weight": 3.0,
+            "base_value": 15,
+            "damage_type": "bludgeoning"
+        },
+        "staff": {
+            "name": "Staff",
+            "item_class": "MAGIC",
+            "base_damage_dice": "1d6",
+            "weight": 4.0,
+            "base_value": 10,
+            "damage_type": "force"
+        },
+        "wand": {
+            "name": "Wand",
+            "item_class": "MAGIC",
+            "base_damage_dice": "1d4",
+            "weight": 1.0,
+            "base_value": 5,
+            "damage_type": "force"
+        },
+        "shortbow": {
+            "name": "Shortbow",
+            "item_class": "RANGED",
+            "base_damage_dice": "1d6",
+            "weight": 2.0,
+            "base_value": 25,
+            "damage_type": "piercing"
+        },
+        "light_crossbow": {
+            "name": "Light Crossbow",
+            "item_class": "RANGED",
+            "base_damage_dice": "1d8",
+            "weight": 4.0,
+            "base_value": 50,
+            "damage_type": "piercing"
+        },
+        "padded_armor": {
+            "name": "Padded Armor",
+            "item_class": "ARMOR",
+            "armor_slot": "CHEST",
+            "armour_category": "LIGHT",
+            "dex_cap": null,
+            "base_ac_bonus": 1,
+            "weight": 2.0,
+            "base_value": 5
+        },
+        "leather_armor": {
+            "name": "Leather Armor",
+            "item_class": "ARMOR",
+            "armor_slot": "CHEST",
+            "armour_category": "LIGHT",
+            "dex_cap": null,
+            "base_ac_bonus": 1,
+            "weight": 2.0,
+            "base_value": 10
+        },
+        "chainmail": {
+            "name": "Chainmail",
+            "item_class": "ARMOR",
+            "armor_slot": "CHEST",
+            "armour_category": "MEDIUM",
+            "dex_cap": 2,
+            "base_ac_bonus": 2,
+            "weight": 4.0,
+            "base_value": 75
+        },
+        "plate_armor": {
+            "name": "Plate Armor",
+            "item_class": "ARMOR",
+            "armor_slot": "CHEST",
+            "armour_category": "HEAVY",
+            "dex_cap": 0,
+            "base_ac_bonus": 3,
+            "weight": 6.0,
+            "base_value": 1500
+        },
+        "buckler": {
+            "name": "Buckler",
+            "item_class": "ARMOR",
+            "armor_slot": "SHIELD",
+            "armour_category": "SHIELD",
+            "dex_cap": null,
+            "base_ac_bonus": 1,
+            "weight": 1.0,
+            "base_value": 15
+        },
+        "tower_shield": {
+            "name": "Tower Shield",
+            "item_class": "ARMOR",
+            "armor_slot": "SHIELD",
+            "armour_category": "SHIELD",
+            "dex_cap": null,
+            "base_ac_bonus": 2,
+            "weight": 4.0,
+            "base_value": 50
+        },
+        "leather_cap": {
+            "name": "Leather Cap",
+            "item_class": "ARMOR",
+            "armor_slot": "HEAD",
+            "armour_category": "LIGHT",
+            "dex_cap": null,
+            "base_ac_bonus": 1,
+            "weight": 1.0,
+            "base_value": 10
+        },
+        "iron_helm": {
+            "name": "Iron Helm",
+            "item_class": "ARMOR",
+            "armor_slot": "HEAD",
+            "armour_category": "MEDIUM",
+            "dex_cap": 2,
+            "base_ac_bonus": 1,
+            "weight": 2.0,
+            "base_value": 30
+        },
+        "leather_gloves": {
+            "name": "Leather Gloves",
+            "item_class": "ARMOR",
+            "armor_slot": "HANDS",
+            "armour_category": "LIGHT",
+            "dex_cap": null,
+            "base_ac_bonus": 0,
+            "weight": 0.5,
+            "base_value": 5
+        },
+        "iron_gauntlets": {
+            "name": "Iron Gauntlets",
+            "item_class": "ARMOR",
+            "armor_slot": "HANDS",
+            "armour_category": "MEDIUM",
+            "dex_cap": 2,
+            "base_ac_bonus": 1,
+            "weight": 1.0,
+            "base_value": 20
+        },
+        "leather_boots": {
+            "name": "Leather Boots",
+            "item_class": "ARMOR",
+            "armor_slot": "FEET",
+            "armour_category": "LIGHT",
+            "dex_cap": null,
+            "base_ac_bonus": 0,
+            "weight": 0.5,
+            "base_value": 5
+        },
+        "iron_greaves": {
+            "name": "Iron Greaves",
+            "item_class": "ARMOR",
+            "armor_slot": "FEET",
+            "armour_category": "MEDIUM",
+            "dex_cap": 2,
+            "base_ac_bonus": 1,
+            "weight": 1.5,
+            "base_value": 25
+        },
+        "health_potion": {
+            "name": "Health Potion",
+            "item_class": "CONSUMABLE",
+            "base_effect": "HEAL_2d4+2",
+            "weight": 0.5,
+            "base_value": 50
+        },
+        "greater_healing": {
+            "name": "Greater Healing",
+            "item_class": "CONSUMABLE",
+            "base_effect": "HEAL_4d4+4",
+            "weight": 0.5,
+            "base_value": 150
+        },
+        "antitoxin": {
+            "name": "Antitoxin",
+            "item_class": "CONSUMABLE",
+            "base_effect": "CURE_POISON",
+            "weight": 0.5,
+            "base_value": 50
+        },
+        "silver_goblet": {
+            "name": "Silver Goblet",
+            "item_class": "VALUABLE",
+            "weight": 1.0,
+            "base_value": 25
+        },
+        "jeweled_relic": {
+            "name": "Jeweled Relic",
+            "item_class": "VALUABLE",
+            "weight": 1.0,
+            "base_value": 100
+        },
+        "crypt_dust": {
+            "name": "Crypt Dust",
+            "item_class": "VALUABLE",
+            "weight": 0.5,
+            "base_value": 1
+        },
+        "thieves_tools": {
+            "name": "Thieves' Tools",
+            "item_class": "TOOL",
+            "weight": 1.0,
+            "base_value": 25
+        }
+    }
+}

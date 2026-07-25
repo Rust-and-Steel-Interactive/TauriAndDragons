@@ -1,0 +1,143 @@
+{
+    "MELEE": {
+        "quality": {
+            "1": { "name": "Test-Grade", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Good", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Perfect", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Debug Alloy", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Iron", "stat_bonus": 1, "value_mult": 1.5 },
+            "3": { "name": "Steel", "stat_bonus": 2, "value_mult": 3.0 },
+            "4": { "name": "Mithril", "stat_bonus": 3, "value_mult": 8.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Test", "stat_bonus": 0, "value_mult": 1.2, "effect": "plus_one_atk" },
+            "3": { "name": "Refined", "stat_bonus": 0, "value_mult": 2.0, "effect": "crit_19" },
+            "4": { "name": "Masterwork", "stat_bonus": 1, "value_mult": 5.0 }
+        }
+    },
+    "RANGED": {
+        "quality": {
+            "1": { "name": "Test-Grade", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Good", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Perfect", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Yew", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Ash", "stat_bonus": 1, "value_mult": 1.5 },
+            "3": { "name": "Horn", "stat_bonus": 2, "value_mult": 3.0 },
+            "4": { "name": "Dragonbone", "stat_bonus": 3, "value_mult": 8.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Test", "stat_bonus": 0, "value_mult": 1.2, "effect": "plus_one_atk" },
+            "3": { "name": "Refined", "stat_bonus": 0, "value_mult": 2.0, "effect": "crit_19" },
+            "4": { "name": "Masterwork", "stat_bonus": 1, "value_mult": 5.0 }
+        }
+    },
+    "MAGIC": {
+        "quality": {
+            "1": { "name": "Test-Grade", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Good", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Perfect", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Oak", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Ironwood", "stat_bonus": 1, "value_mult": 1.5 },
+            "3": { "name": "Crystal", "stat_bonus": 2, "value_mult": 3.0 },
+            "4": { "name": "Kyanite", "stat_bonus": 3, "value_mult": 8.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Test", "stat_bonus": 0, "value_mult": 1.2, "effect": "plus_one_atk" },
+            "3": { "name": "Refined", "stat_bonus": 0, "value_mult": 2.0, "effect": "crit_19" },
+            "4": { "name": "Masterwork", "stat_bonus": 1, "value_mult": 5.0 }
+        }
+    },
+    "ARMOR": {
+        "quality": {
+            "1": { "name": "Test-Grade", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Reinforced", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Immaculate", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "stat_bonus": 0, "value_mult": 1.0 },
+            "2": { "name": "Test-Trim", "stat_bonus": 0, "value_mult": 1.2, "effect": "plus_one_atk" },
+            "3": { "name": "Silver-Trim", "stat_bonus": 0, "value_mult": 2.0, "effect": "plus_one_save" },
+            "4": { "name": "Gold-Trim", "stat_bonus": 1, "value_mult": 5.0 }
+        }
+    },
+    "CONSUMABLE": {
+        "quality": {
+            "1": { "name": "Test Quality", "value_mult": 1.0, "effect_mult": 1.0 },
+            "2": { "name": "Standard", "value_mult": 1.0, "effect_mult": 1.0 },
+            "3": { "name": "Clear", "value_mult": 2.0, "effect_mult": 1.5 },
+            "4": { "name": "Radiant", "value_mult": 5.0, "effect_mult": 2.0 }
+        },
+        "material": {
+            "1": { "name": "Test Vial", "value_mult": 1.0 },
+            "2": { "name": "Glass Vial", "value_mult": 1.0 },
+            "3": { "name": "Crystal Flask", "value_mult": 3.0 },
+            "4": { "name": "Golden Chalice", "value_mult": 6.0 }
+        }
+    },
+    "VALUABLE": {
+        "quality": {
+            "1": { "name": "Test Quality", "value_mult": 1.0 },
+            "2": { "name": "Flawed", "value_mult": 0.8 },
+            "3": { "name": "Flawless", "value_mult": 2.0 },
+            "4": { "name": "Perfect", "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Test Metal", "value_mult": 1.0 },
+            "2": { "name": "Silver", "value_mult": 1.0 },
+            "3": { "name": "Gold", "value_mult": 5.0 },
+            "4": { "name": "Platinum", "value_mult": 20.0 }
+        }
+    },
+    "TOOL": {
+        "quality": {
+            "1": { "name": "Crude", "value_mult": 0.5 },
+            "2": { "name": "Standard", "value_mult": 1.0 },
+            "3": { "name": "Superior", "value_mult": 2.0 },
+            "4": { "name": "Masterwork", "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Pine", "value_mult": 1.0, "effect_mult": 1.0 },
+            "2": { "name": "Oak", "value_mult": 1.5, "effect_mult": 1.25 },
+            "3": { "name": "Ironwood", "value_mult": 2.0, "effect_mult": 1.5 },
+            "4": { "name": "Elderwood", "value_mult": 3.0, "effect_mult": 2.0 }
+        },
+        "component": {
+            "1": { "name": "Pitch-Soaked", "value_mult": 1.0, "stat_bonus": 0 },
+            "2": { "name": "Chemical Fire", "value_mult": 1.5, "stat_bonus": 1 },
+            "3": { "name": "Eldritch Glow", "value_mult": 2.0, "stat_bonus": 2 }
+        }
+    },
+    "BELT": {
+        "quality": {
+            "1": { "name": "Test Quality", "value_mult": 1.0 },
+            "2": { "name": "Standard", "value_mult": 1.0 },
+            "3": { "name": "Reinforced", "value_mult": 2.0 },
+            "4": { "name": "Immaculate", "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Leather", "value_mult": 1.0 },
+            "2": { "name": "Bronze-Studded", "value_mult": 1.5 },
+            "3": { "name": "Rune-Engraved", "value_mult": 3.0 },
+            "4": { "name": "Mithril-Linked", "value_mult": 8.0 }
+        },
+        "component": {
+            "1": { "name": "Plain", "value_mult": 1.0 },
+            "2": { "name": "Buckle", "value_mult": 1.2 },
+            "3": { "name": "Gem-Set", "value_mult": 2.0 },
+            "4": { "name": "Enchanted", "value_mult": 5.0 }
+        }
+    }
+}

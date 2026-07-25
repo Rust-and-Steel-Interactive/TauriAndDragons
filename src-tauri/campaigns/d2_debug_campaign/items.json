@@ -1,0 +1,146 @@
+{
+  "base_items": {
+    "shortsword": {
+      "name": "Shortsword",
+      "item_class": "MELEE",
+      "base_damage_dice": "1d6",
+      "weight": 2.0,
+      "base_value": 10,
+      "handedness": "ONE_HANDED",
+      "damage_type": "slashing"
+    },
+    "greatsword": {
+      "name": "Greatsword",
+      "item_class": "MELEE",
+      "base_damage_dice": "2d6",
+      "weight": 6.0,
+      "base_value": 50,
+      "handedness": "TWO_HANDED",
+      "damage_type": "slashing"
+    },
+    "health_potion": {
+      "name": "Health Potion",
+      "item_class": "CONSUMABLE",
+      "base_effect": "HEAL_2d4+2",
+      "weight": 0.5,
+      "base_value": 50
+    },
+    "leather_armor": {
+      "name": "Leather Armor",
+      "item_class": "ARMOR",
+      "armor_slot": "CHEST",
+      "armour_category": "LIGHT",
+      "dex_cap": null,
+      "base_ac_bonus": 1,
+      "weight": 2.0,
+      "base_value": 10
+    },
+    "silver_goblet": {
+      "name": "Silver Goblet",
+      "item_class": "VALUABLE",
+      "weight": 1.0,
+      "base_value": 25
+    },
+    "thieves_tools": {
+      "name": "Thieves' Tools",
+      "item_class": "TOOL",
+      "weight": 1.0,
+      "base_value": 25
+    },
+    "torch": {
+      "name": "Standard Torch",
+      "item_class": "TOOL",
+      "weight": 1.0,
+      "base_value": 1,
+      "light_radius": 3,
+      "duration_turns": 60,
+      "handedness": "ONE_HANDED"
+    },
+    "buckler": {
+      "name": "Buckler",
+      "item_class": "ARMOR",
+      "armor_slot": "SHIELD",
+      "armour_category": "SHIELD",
+      "base_ac_bonus": 1,
+      "weight": 1.0,
+      "base_value": 15,
+      "handedness": "OFF_HAND_ONLY"
+    },
+    "lantern": {
+      "name": "Lantern",
+      "item_class": "TOOL",
+      "weight": 2.0,
+      "base_value": 10,
+      "light_radius": 5,
+      "max_duration": 150,
+      "handedness": "ONE_HANDED"
+    },
+    "tinderbox": {
+      "name": "Tinderbox",
+      "item_class": "TOOL",
+      "weight": 0.5,
+      "base_value": 5
+    },
+    "oil_flask": {
+      "name": "Oil Flask",
+      "item_class": "CONSUMABLE",
+      "weight": 1.0,
+      "base_value": 2,
+      "fuel_restore": 100
+    },
+    "leather_belt": {
+      "name": "Leather Belt",
+      "item_class": "BELT",
+      "weight": 1.0,
+      "base_value": 10,
+      "tier": 1,
+      "utility_slots": 1,
+      "armor_slot": "WAIST",
+      "armour_category": "LIGHT"
+    },
+    "adventurers_belt": {
+      "name": "Adventurer's Belt",
+      "item_class": "BELT",
+      "weight": 1.5,
+      "base_value": 25,
+      "tier": 2,
+      "utility_slots": 1,
+      "armor_slot": "WAIST",
+      "armour_category": "LIGHT"
+    },
+    "rune_clasp_belt": {
+      "name": "Rune-Clasp Belt",
+      "item_class": "BELT",
+      "weight": 2.0,
+      "base_value": 100,
+      "tier": 3,
+      "utility_slots": 2,
+      "armor_slot": "WAIST",
+      "armour_category": "MEDIUM"
+    },
+    "titans_girdle": {
+      "name": "Titan's Girdle",
+      "item_class": "BELT",
+      "weight": 3.0,
+      "base_value": 300,
+      "tier": 4,
+      "utility_slots": 3,
+      "armor_slot": "WAIST",
+      "armour_category": "HEAVY"
+    },
+    "charm_of_protection": {
+      "name": "Charm of Protection",
+      "item_class": "CHARM",
+      "weight": 0.2,
+      "base_value": 50,
+      "base_ac_bonus": 1
+    },
+    "luck_stone": {
+      "name": "Luck Stone",
+      "item_class": "CHARM",
+      "weight": 0.2,
+      "base_value": 30,
+      "base_effect": "SAVING_THROW_BONUS_1"
+    }
+  }
+}

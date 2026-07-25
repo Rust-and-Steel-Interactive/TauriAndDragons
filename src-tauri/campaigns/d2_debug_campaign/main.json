@@ -1,0 +1,67 @@
+{
+  "campaign_id": "d2_debug_campaign",
+  "campaign_name": "D2: Belt & Utility Debug",
+  "description": "Debug campaign testing belts, utility slots, lantern fuel/refuel, torch mechanics, and charm AC bonuses.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 50,
+    "starting_ac": 14,
+    "starting_gp": 100,
+    "starting_strength": 16,
+    "starting_dexterity": 16,
+    "starting_constitution": 16,
+    "starting_intelligence": 16,
+    "starting_wisdom": 16,
+    "starting_charisma": 16,
+    "starting_proficiency_bonus": 4,
+    "starting_inventory": [
+      { "id": "shortsword", "quantity": 1 },
+      { "id": "greatsword", "quantity": 1 },
+      { "id": "leather_armor", "quantity": 1 },
+      { "id": "thieves_tools", "quantity": 1 },
+      { "id": "health_potion", "quantity": 2 },
+      { "id": "leather_belt", "quantity": 1 },
+      { "id": "torch", "quantity": 2 },
+      { "id": "lantern", "quantity": 1 },
+      { "id": "tinderbox", "quantity": 1 },
+      { "id": "oil_flask", "quantity": 3 },
+      { "id": "charm_of_protection", "quantity": 1 },
+      { "id": "luck_stone", "quantity": 1 }
+    ],
+    "starting_equipped_weapon": "shortsword",
+    "starting_thieves_tools": true
+  },
+  "container_parts": {
+    "lock_statuses": [
+      { "name": "Crystal Seal", "weight": 10.0, "tier": 4 },
+      { "name": "Arcane Lock", "weight": 20.0, "tier": 3 },
+      { "name": "Heavy Bolted Lock", "weight": 30.0, "tier": 2 },
+      { "name": "Simple Latch", "weight": 40.0, "tier": 1 }
+    ],
+    "conditions": [
+      { "name": "Pristine", "weight": 15.0, "tier": 4 },
+      { "name": "Excellent", "weight": 30.0, "tier": 3 },
+      { "name": "Standard", "weight": 40.0, "tier": 2 },
+      { "name": "Rotting", "weight": 15.0, "tier": 1 }
+    ],
+    "accent_materials": [
+      { "name": "Gem-Inlaid", "weight": 10.0, "tier": 4 },
+      { "name": "Bronze-Studded", "weight": 20.0, "tier": 3 },
+      { "name": "Iron-Banded", "weight": 30.0, "tier": 2 },
+      { "name": "Leather-Wrapped", "weight": 40.0, "tier": 1 }
+    ],
+    "core_materials": [
+      { "name": "Elderwood", "weight": 15.0, "tier": 4 },
+      { "name": "Ironwood", "weight": 20.0, "tier": 3 },
+      { "name": "Pine", "weight": 30.0, "tier": 2 },
+      { "name": "Oak", "weight": 35.0, "tier": 1 }
+    ],
+    "container_types": [
+      { "name": "Trunk", "weight": 10.0, "tier": 2 },
+      { "name": "Strongbox", "weight": 15.0, "tier": 2 },
+      { "name": "Barrel", "weight": 20.0, "tier": 1 },
+      { "name": "Crate", "weight": 25.0, "tier": 1 },
+      { "name": "Chest", "weight": 30.0, "tier": 1 }
+    ]
+  }
+}

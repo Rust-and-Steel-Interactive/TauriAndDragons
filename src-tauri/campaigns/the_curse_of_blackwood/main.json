@@ -1,0 +1,26 @@
+{
+  "campaign_id": "the_curse_of_blackwood",
+  "campaign_name": "The Curse of Blackwood",
+  "description": "A haunted forest where the trees remember ancient grudges.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 20,
+    "starting_ac": 12,
+    "starting_gp": 5,
+    "starting_strength": 13,
+    "starting_dexterity": 14,
+    "starting_constitution": 12,
+    "starting_intelligence": 12,
+    "starting_wisdom": 13,
+    "starting_charisma": 10,
+    "starting_proficiency_bonus": 2,
+    "starting_inventory": [
+      { "id": "health_potion", "quantity": 1 },
+      { "id": "shortsword", "quantity": 1 },
+      { "id": "leather_armor", "quantity": 1 },
+      { "id": "thieves_tools", "quantity": 1 }
+    ],
+    "starting_equipped_weapon": "shortsword",
+    "starting_thieves_tools": true
+  }
+}
