@@ -1,0 +1,37 @@
+{
+  "base_items": {
+    "staff": {
+      "name": "Apprentice Staff",
+      "item_class": "MAGIC",
+      "base_damage_dice": "1d6",
+      "damage_type": "bludgeoning",
+      "weight": 3.0,
+      "base_value": 10,
+      "handedness": "TWO_HANDED",
+      "weapon_range": { "normal": 1, "long": null }
+    },
+    "health_potion": {
+      "name": "Health Potion",
+      "item_class": "CONSUMABLE",
+      "base_effect": "HEAL_2d4+2",
+      "weight": 0.5,
+      "base_value": 50
+    },
+    "spellbook_of_fire": {
+      "name": "Tome of Scorching Flame",
+      "item_class": "SPELLBOOK",
+      "weight": 2.0,
+      "base_value": 200,
+      "tier": 2,
+      "discipline": "Fire",
+      "known_spell_ids": ["fire_bolt"]
+    },
+    "scroll_of_fireball": {
+      "name": "Scroll of Fireball",
+      "item_class": "SPELL_SCROLL",
+      "weight": 0.1,
+      "base_value": 150,
+      "scroll_spell_id": "fireball"
+    }
+  }
+}

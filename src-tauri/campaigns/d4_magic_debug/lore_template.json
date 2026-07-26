@@ -1,0 +1,13 @@
+{
+  "world_name": "D4 Magic Debug",
+  "tone": "Testing environment with no stakes — magic stuff works as expected.",
+  "setting_lore": "A simple two-room testing ground for spellcasting mechanics.",
+  "factions": [],
+  "key_locations": [
+    { "name": "Entry Hall", "description": "Starting room. A staff rack and a lectern hold a spellbook and a scroll." }
+  ],
+  "narrative_rules": [
+    "This is a testing environment. Describe events concisely.",
+    "The player has magical aptitude and is testing spells on a target dummy."
+  ]
+}

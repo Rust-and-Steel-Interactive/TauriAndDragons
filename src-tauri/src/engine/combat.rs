@@ -1,6 +1,6 @@
 use rand::Rng;
-use crate::engine::state::{DamageType, DamageProfile, WeaponRange, Tile, has_line_of_sight, chebyshev_distance, Player};
-use crate::campaign::schema::BaseSpell;
+use crate::engine::state::{DamageType, DamageProfile, WeaponRange, Tile, has_line_of_sight, chebyshev_distance, tiles_between, Player};
+use crate::campaign::schema::{BaseSpell, AoEShape};
 
 /// Why an attack could not proceed to the dice roll at all.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,13 +66,17 @@ pub fn resolve_attack_roll(inputs: AttackRollInputs) -> Result<AttackRollResult,
     Ok(AttackRollResult { roll, bonus, total: roll + bonus, is_crit })
 }
 
-/// Rolls weapon damage dice, doubles on crit, adds the flat bonus, then applies
-/// the target's resistance/vulnerability/immunity profile.
-pub fn resolve_damage_roll(dmg_dice: &str, dmg_bonus: i32, is_crit: bool, damage_type: DamageType, target_profile: &DamageProfile) -> i32 {
-    let raw = crate::engine::validator::roll_dice_expr(dmg_dice);
-    let dice_roll = if is_crit { raw.0 * 2 } else { raw.0 };
-    let total = dice_roll + raw.1 + dmg_bonus;
-    apply_resistance(total, damage_type, target_profile)
+/// Rolls weapon/spell damage dice and doubles on crit. Deliberately does NOT
+/// apply resistance — `SessionState::apply_damage` (state.rs) is the single
+/// place resistance gets applied, since it's the only call site that actually
+/// knows which target is being hit and can look up the right DamageProfile.
+/// An earlier version of this function applied resistance itself AND relied
+/// on callers piping the result through apply_damage, which double-applied
+/// resistance on every hit — fixed here.
+pub fn resolve_damage_roll(dmg_dice: &str, dmg_bonus: i32, is_crit: bool) -> i32 {
+    let (dice_roll, embedded_bonus) = crate::engine::validator::roll_dice_expr(dmg_dice);
+    let dice_roll = if is_crit { dice_roll * 2 } else { dice_roll };
+    dice_roll + embedded_bonus + dmg_bonus
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -147,6 +151,35 @@ pub fn can_cast_spell(player: &Player, spell_id: &str, spell: &BaseSpell) -> Res
         }
     }
     Ok(())
+}
+
+/// Turn a spell's AoEShape into the concrete set of tiles it covers.
+pub fn rasterize_aoe(shape: &AoEShape, origin: (i32, i32), target: (i32, i32)) -> Vec<(i32, i32)> {
+    match shape {
+        AoEShape::Circle { radius } => {
+            let mut tiles = Vec::new();
+            for dx in -*radius..=*radius {
+                for dy in -*radius..=*radius {
+                    let (tx, ty) = (target.0 + dx, target.1 + dy);
+                    if chebyshev_distance(target.0, target.1, tx, ty) <= *radius {
+                        tiles.push((tx, ty));
+                    }
+                }
+            }
+            tiles
+        }
+        AoEShape::Line { length } => {
+            let dx = (target.0 - origin.0) as f32;
+            let dy = (target.1 - origin.1) as f32;
+            let mag = (dx * dx + dy * dy).sqrt().max(0.001);
+            let (fx, fy) = (dx / mag, dy / mag);
+            let end_x = origin.0 + (fx * *length as f32).round() as i32;
+            let end_y = origin.1 + (fy * *length as f32).round() as i32;
+            let mut tiles = tiles_between(origin.0, origin.1, end_x, end_y);
+            tiles.push((end_x, end_y));
+            tiles
+        }
+    }
 }
 
 pub fn apply_resistance(dmg: i32, dtype: DamageType, profile: &DamageProfile) -> i32 {
@@ -340,21 +373,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scenario_resist_vuln_immune_damage() {
-        let resistant = DamageProfile { resistances: vec![DamageType::Bludgeoning], ..Default::default() };
-        let vulnerable = DamageProfile { vulnerabilities: vec![DamageType::Fire], ..Default::default() };
-        let immune = DamageProfile { immunities: vec![DamageType::Poison], ..Default::default() };
-        let neutral = DamageProfile::default();
-
-        let base = resolve_damage_roll("1d1+10", 0, false, DamageType::Bludgeoning, &neutral);
-        let resisted = resolve_damage_roll("1d1+10", 0, false, DamageType::Bludgeoning, &resistant);
-        let vuln = resolve_damage_roll("1d1+10", 0, false, DamageType::Fire, &vulnerable);
-        let immune_result = resolve_damage_roll("1d1+10", 0, false, DamageType::Poison, &immune);
-
-        assert_eq!(base, 11);
-        assert_eq!(resisted, 5);
-        assert_eq!(vuln, 22);
-        assert_eq!(immune_result, 0);
+    fn test_resolve_damage_roll_crit_doubles_dice_only() {
+        let normal = resolve_damage_roll("1d1", 5, false);
+        let crit = resolve_damage_roll("1d1", 5, true);
+        assert_eq!(normal, 6);
+        assert_eq!(crit, 7);
     }
 
     fn test_spell(mana_cost: i32, allowed_weapons: &[&str]) -> BaseSpell {
@@ -428,5 +451,22 @@ mod tests {
         let player = Player { has_resonance: true, mana: 100, known_spell_ids: HashSet::from(["bolt".to_string()]), ..Player::default_for_test() };
         let spell = test_spell(5, &[]);
         assert_eq!(can_cast_spell(&player, "bolt", &spell), Ok(()));
+    }
+
+    #[test]
+    fn test_rasterize_aoe_circle_includes_center_and_radius_edge() {
+        let shape = AoEShape::Circle { radius: 1 };
+        let tiles = rasterize_aoe(&shape, (0, 0), (5, 5));
+        assert!(tiles.contains(&(5, 5)));
+        assert!(tiles.contains(&(6, 5)));
+        assert!(!tiles.contains(&(7, 5)));
+    }
+
+    #[test]
+    fn test_rasterize_aoe_line_extends_from_origin_toward_target() {
+        let shape = AoEShape::Line { length: 3 };
+        let tiles = rasterize_aoe(&shape, (0, 0), (10, 0));
+        assert!(tiles.contains(&(3, 0)));
+        assert!(!tiles.contains(&(0, 0)));
     }
 }

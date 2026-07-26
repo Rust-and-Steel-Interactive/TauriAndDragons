@@ -1,0 +1,33 @@
+{
+  "campaign_id": "d4_magic_debug",
+  "campaign_name": "D4 Magic Debug",
+  "description": "Two-room campaign for testing spellcasting: staff, spellbook, scroll, and a dummy enemy.",
+  "starting_map": "level_1",
+  "player_template": {
+    "starting_hp": 50,
+    "starting_ac": 14,
+    "starting_gp": 100,
+    "starting_strength": 10,
+    "starting_dexterity": 14,
+    "starting_constitution": 12,
+    "starting_intelligence": 18,
+    "starting_wisdom": 14,
+    "starting_charisma": 10,
+    "starting_proficiency_bonus": 4,
+    "starting_inventory": [
+      { "id": "staff", "quantity": 1 },
+      { "id": "health_potion", "quantity": 3 },
+      { "id": "spellbook_of_fire", "quantity": 1 },
+      { "id": "scroll_of_fireball", "quantity": 1 }
+    ],
+    "starting_equipped_weapon": "staff",
+    "starting_thieves_tools": false
+  },
+  "container_parts": {
+    "lock_statuses": [],
+    "conditions": [],
+    "accent_materials": [],
+    "core_materials": [],
+    "container_types": []
+  }
+}

@@ -155,4 +155,40 @@ mod tests {
         assert!(data.spells.base_spells.contains_key("fire_bolt"));
         assert!(data.spells.base_spells.contains_key("fireball"));
     }
+
+    #[test]
+    fn test_load_d4_magic_debug_campaign() {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let campaign_dir = manifest_dir.join("campaigns").join("d4_magic_debug");
+        let data = load_campaign(&campaign_dir).expect("d4_magic_debug should load");
+
+        assert_eq!(data.main.campaign_id, "d4_magic_debug");
+
+        // Confirm SPELLBOOK item has all magic fields
+        let spellbook = data.items.base_items.get("spellbook_of_fire").unwrap();
+        assert_eq!(spellbook.item_class, "SPELLBOOK");
+        assert_eq!(spellbook.discipline.as_deref(), Some("Fire"));
+        assert_eq!(spellbook.tier, Some(2));
+        assert!(spellbook.known_spell_ids.contains(&"fire_bolt".to_string()));
+
+        // Confirm SPELL_SCROLL item
+        let scroll = data.items.base_items.get("scroll_of_fireball").unwrap();
+        assert_eq!(scroll.item_class, "SPELL_SCROLL");
+        assert_eq!(scroll.scroll_spell_id.as_deref(), Some("fireball"));
+
+        // Confirm spells exist
+        assert!(data.spells.base_spells.contains_key("fire_bolt"));
+        assert!(data.spells.base_spells.contains_key("heal_wounds"));
+        assert!(data.spells.base_spells.contains_key("fireball"));
+
+        // Confirm staff is a MAGIC item with allowed_weapon-compatible template_id
+        let staff = data.items.base_items.get("staff").unwrap();
+        assert_eq!(staff.item_class, "MAGIC");
+
+        // Confirm enemy exists
+        assert!(data.enemies.base_enemies.contains_key("test_dummy"));
+
+        // Confirm map has 2 rooms
+        assert_eq!(data.map.rooms.len(), 2);
+    }
 }

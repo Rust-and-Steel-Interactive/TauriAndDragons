@@ -1,0 +1,21 @@
+{
+  "base_enemies": {
+    "test_dummy": {
+      "name": "Test Dummy",
+      "enemy_class": "MONSTER",
+      "base_hp": 30,
+      "base_ac": 10,
+      "base_damage_dice": "1d1",
+      "base_attack_bonus": 0,
+      "base_xp": 0,
+      "strength": 10,
+      "dexterity": 10,
+      "constitution": 10,
+      "intelligence": 1,
+      "wisdom": 1,
+      "charisma": 1,
+      "perks": [],
+      "loot_table": []
+    }
+  }
+}

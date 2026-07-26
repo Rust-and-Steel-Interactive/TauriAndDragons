@@ -1,0 +1,33 @@
+{
+  "map_id": "level_1",
+  "rooms": [
+    {
+      "id": "entry_hall",
+      "name": "Entry Hall",
+      "description": "A quiet stone chamber. An exit leads west to the testing grounds.",
+      "connections": ["", "", "combat_room", ""],
+      "room_template": "medium_room",
+      "interior_width": 5,
+      "interior_height": 5,
+      "wall_thickness": 1
+    },
+    {
+      "id": "combat_room",
+      "name": "Target Range",
+      "description": "A straw test dummy stands in the middle of the room, waiting to absorb spells.",
+      "connections": ["entry_hall", "", "", ""],
+      "room_template": "small_room",
+      "interior_width": 7,
+      "interior_height": 7,
+      "wall_thickness": 1,
+      "procedural_slots": {
+        "dummy": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "test_dummy", "scale": 1.0 }]
+          }
+        }
+      }
+    }
+  ]
+}

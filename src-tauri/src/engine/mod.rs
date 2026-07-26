@@ -207,6 +207,10 @@ impl GameEngine {
     // ─── Turn Flow ───────────────────────────────────────────────────
 
     pub fn start_turn(&mut self, combatant_id: &str) {
+        if combatant_id == "player" {
+            self.state.player.mana = (self.state.player.mana + 1).min(self.state.player.max_mana);
+        }
+
         let speed = if combatant_id == "player" {
             self.state.player.speed
         } else {
@@ -479,12 +483,8 @@ impl GameEngine {
         }
 
         if result.is_crit || result.total >= target_ac {
-            let enemy_profile = self.state.get_current_room()
-                .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
-                .map(|e| e.damage_profile.clone())
-                .unwrap_or_default();
             let dmg_roll = crate::engine::combat::resolve_damage_roll(
-                &enemy.damage_dice, enemy.get_damage_bonus(), result.is_crit, state::DamageType::default(), &enemy_profile,
+                &enemy.damage_dice, enemy.get_damage_bonus(), result.is_crit,
             );
 
             self.state.apply_damage(target_id, dmg_roll, state::DamageType::default()).unwrap(); // TODO(Phase 7): use enemy's own damage_type once added
@@ -1088,28 +1088,234 @@ impl GameEngine {
                 _ => return "SYS_MSG:Invalid AoE target coordinates.".to_string(),
             };
 
-            self.state.generate_available_actions(&self.campaign);
-            format!(
-                "SYS_MSG:You gather power to cast {} toward ({}, {}), but the spell's full effect isn't implemented yet.",
-                spell.name, tx, ty
-            )
+            let shape = match &spell.area_of_effect {
+                Some(s) => s.clone(),
+                None => return "SYS_MSG:This spell has no area effect.".to_string(),
+            };
+            if spell.damage_dice.is_none() {
+                return "SYS_MSG:This spell has no offensive effect and can't be cast as an area attack yet.".to_string();
+            }
+
+            let (px, py) = (self.state.player.x, self.state.player.y);
+            let affected_tiles = crate::engine::combat::rasterize_aoe(&shape, (px, py), (tx, ty));
+            let affected_set: std::collections::HashSet<(i32, i32)> = affected_tiles.into_iter().collect();
+
+            let hit_enemy_ids: Vec<String> = self.state.get_current_room()
+                .map(|r| r.enemies.iter()
+                    .filter(|e| e.hp > 0 && affected_set.contains(&(e.x, e.y)))
+                    .map(|e| e.id.clone())
+                    .collect())
+                .unwrap_or_default();
+
+            if hit_enemy_ids.is_empty() {
+                return "SYS_MSG:No targets are caught in the area of effect.".to_string();
+            }
+
+            self.state.player.mana -= spell.mana_cost;
+
+            let dmg_dice = spell.damage_dice.clone().unwrap();
+            let weapon_damage_type = spell.damage_type.unwrap_or_default();
+            let save_dc = 8 + ability_modifier(self.state.player.intelligence) + self.state.player.proficiency_bonus;
+            let mut rng = rand::thread_rng();
+            let mut per_enemy_lines = Vec::new();
+
+            for enemy_id in &hit_enemy_ids {
+                let (save_mod, enemy_name) = {
+                    let room = self.state.get_current_room().unwrap();
+                    let enemy = room.enemies.iter().find(|e| &e.id == enemy_id).unwrap();
+                    (ability_modifier(enemy.dexterity).max(ability_modifier(enemy.constitution)), enemy.name.clone())
+                };
+                let save_roll = rng.gen_range(1..=20) + save_mod;
+                let saved = save_roll >= save_dc;
+
+                let raw_dmg = crate::engine::combat::resolve_damage_roll(&dmg_dice, 0, false);
+                let final_dmg = if saved { raw_dmg / 2 } else { raw_dmg };
+                self.state.apply_damage(enemy_id, final_dmg, weapon_damage_type).unwrap();
+
+                let enemy_hp_after = self.state.get_current_room()
+                    .and_then(|r| r.enemies.iter().find(|e| &e.id == enemy_id)).map(|e| e.hp).unwrap_or(0);
+
+                per_enemy_lines.push(format!(
+                    "  - {}: save d20+{} = {} vs DC {} ({}). Took {} damage. HP now {}.",
+                    enemy_name, save_mod, save_roll, save_dc,
+                    if saved { "SUCCESS, half damage" } else { "FAILURE, full damage" },
+                    final_dmg, enemy_hp_after
+                ));
+                self.state.log_combat(format!("{} is caught in {}: save {} vs DC {}, takes {} damage.",
+                    enemy_name, spell.name, if saved { "succeeds" } else { "fails" }, save_dc, final_dmg));
+            }
+
+            self.state.last_roll = format!("[AoE Spell] {} target(s), save DC {}", hit_enemy_ids.len(), save_dc);
+
+            let mut fact_packet = format!(
+                "You are the Dungeon Master. Narrate this area-of-effect spell striking multiple targets at once, including brief individual outcomes for each. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                 --- ENGINE FACT PACKET ---\n\
+                 EVENT_TYPE: PlayerCombatAction\n\
+                 RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"CAST_SPELL_AOE\"\n  spell: \"{}\"\n  target_tile: \"({}, {})\"\n  outcome: \"RESOLVED\"\n\
+                 DICE_ROLLS (per target, save DC {}):\n{}\n\
+                 STATE_DELTAS:\n  - Player mana is now {}.\n",
+                spell.name, tx, ty, save_dc, per_enemy_lines.join("\n"), self.state.player.mana
+            );
+
+            let any_died = self.state.get_current_room()
+                .map(|r| hit_enemy_ids.iter().any(|id| r.enemies.iter().find(|e| &e.id == id).map(|e| e.hp <= 0).unwrap_or(false)))
+                .unwrap_or(false);
+            if any_died {
+                fact_packet.push_str("\nTRIGGER: ENEMY_DEATH (one or more targets). COMBAT_MAY_END.");
+            }
+
+            self.process_loot_for_dead_enemies();
+            if let Some(room) = self.state.get_current_room_mut() {
+                room.enemies.retain(|e| e.hp > 0);
+            }
+
+            self.check_combat_state();
+            self.end_turn("player");
+
+            if self.state.game_mode != state::GameMode::Combat {
+                fact_packet.push_str("\nTRIGGER: COMBAT_END (Victory).");
+                self.state.generate_available_actions(&self.campaign);
+            } else {
+                self.advance_turn();
+                if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
+                    self.state.generate_available_actions(&self.campaign);
+                } else {
+                    self.state.available_actions.clear();
+                }
+            }
+
+            fact_packet
         } else {
             let enemy_id = target_part.to_string();
             if enemy_id.is_empty() {
                 return "SYS_MSG:No target specified.".to_string();
             }
-            let target_exists = self.state.get_current_room()
-                .map(|r| r.enemies.iter().any(|e| e.id == enemy_id && e.hp > 0))
-                .unwrap_or(false);
-            if !target_exists {
-                return "SYS_MSG:That target could not be found.".to_string();
+
+            if spell.damage_dice.is_none() {
+                return "SYS_MSG:This spell has no offensive effect and can't be cast at an enemy this way yet.".to_string();
             }
 
-            self.state.generate_available_actions(&self.campaign);
-            format!(
-                "SYS_MSG:You gather power to cast {} at your target, but the spell's full effect isn't implemented yet.",
-                spell.name
-            )
+            let target_visible = self.state.get_current_room()
+                .and_then(|r| r.enemies.iter().find(|e| e.id == enemy_id).map(|e| {
+                    r.tiles.get(e.y as usize).and_then(|row| row.get(e.x as usize))
+                        .map(|t| t.visibility == state::TileVisibility::Visible).unwrap_or(false)
+                }))
+                .unwrap_or(false);
+            if !target_visible {
+                return "SYS_MSG:That target is not visible. Move closer to reveal them.".to_string();
+            }
+
+            let (px, py) = (self.state.player.x, self.state.player.y);
+            let (ex, ey, enemy_ac, enemy_dodging) = {
+                let room = self.state.get_current_room().unwrap();
+                let enemy = room.enemies.iter().find(|e| e.id == enemy_id).unwrap();
+                let dodging = self.state.combat_resources.get(&enemy.id).map(|r| r.is_dodging).unwrap_or(false);
+                (enemy.x, enemy.y, compute_enemy_ac(enemy), dodging)
+            };
+            let effective_ac = if enemy_dodging { enemy_ac + 5 } else { enemy_ac };
+
+            let weapon_range = spell.range.clone().unwrap_or(state::WeaponRange { normal: 6, long: None });
+            let tiles = self.state.get_current_room().unwrap().tiles.clone();
+            let enemy_adjacent_to_player = self.state.get_current_room()
+                .map(|r| r.enemies.iter().any(|e| e.hp > 0 && state::is_adjacent(e.x, e.y, px, py)))
+                .unwrap_or(false);
+
+            let inputs = crate::engine::combat::AttackRollInputs {
+                attacker_pos: (px, py),
+                target_pos: (ex, ey),
+                tiles: &tiles,
+                weapon_range,
+                base_atk_bonus: ability_modifier(self.state.player.intelligence) + self.state.player.proficiency_bonus,
+                apply_adjacent_enemy_penalty: true,
+                enemy_adjacent_to_attacker: enemy_adjacent_to_player,
+                required_ammo_type: None,
+                has_required_ammo: true,
+            };
+
+            let atk_result = match crate::engine::combat::resolve_attack_roll(inputs) {
+                Ok(r) => r,
+                Err(crate::engine::combat::AttackBlockReason::OutOfRange) => return "SYS_MSG:Target is out of range for this spell.".to_string(),
+                Err(crate::engine::combat::AttackBlockReason::NoLineOfSight) => return "SYS_MSG:You don't have a clear line of sight to that target.".to_string(),
+                Err(crate::engine::combat::AttackBlockReason::OutOfAmmo(_)) => unreachable!("spells never require ammo"),
+            };
+
+            self.state.player.mana -= spell.mana_cost;
+
+            let dmg_dice = spell.damage_dice.clone().unwrap();
+            let weapon_damage_type = spell.damage_type.unwrap_or_default();
+
+            let mut fact_packet;
+            if atk_result.is_crit || atk_result.total >= effective_ac {
+                let raw_dmg = crate::engine::combat::resolve_damage_roll(&dmg_dice, 0, atk_result.is_crit);
+                self.state.apply_damage(&enemy_id, raw_dmg, weapon_damage_type).unwrap();
+
+                self.state.last_roll = format!("[Spell] d20+{} = {} (HIT) vs AC {}. Dmg: {}{} = {}",
+                    atk_result.bonus, atk_result.total, effective_ac, dmg_dice,
+                    if atk_result.is_crit { " [CRIT!]" } else { "" }, raw_dmg);
+                self.state.log_combat(format!("player casts {} at {}: d20+{}={} vs AC {}. Hits for {} damage.",
+                    spell.name, enemy_id, atk_result.bonus, atk_result.total, effective_ac, raw_dmg));
+
+                let enemy_hp_after = self.state.get_current_room()
+                    .and_then(|r| r.enemies.iter().find(|e| e.id == enemy_id)).map(|e| e.hp).unwrap_or(0);
+
+                fact_packet = format!(
+                    "You are the Dungeon Master. Narrate this spell striking its target. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                     --- ENGINE FACT PACKET ---\n\
+                     EVENT_TYPE: PlayerCombatAction\n\
+                     RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"CAST_SPELL\"\n  spell: \"{}\"\n  target: \"{}\"\n  outcome: \"HIT\"\n\
+                     DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n  - Damage: {} = {}{}\n\
+                     STATE_DELTAS:\n  - {} HP is now {}.\n  - Player mana is now {}.\n",
+                    spell.name, enemy_id, atk_result.bonus, atk_result.total, effective_ac, dmg_dice, raw_dmg,
+                    if atk_result.is_crit { " (CRITICAL)" } else { "" }, enemy_id, enemy_hp_after, self.state.player.mana
+                );
+
+                if enemy_hp_after <= 0 {
+                    fact_packet.push_str(&format!("\nTRIGGER: ENEMY_DEATH ({}). COMBAT_MAY_END.", enemy_id));
+                    let (enemy_name, loot_items, xp_val) = {
+                        let dead_enemy = self.state.get_current_room().unwrap().enemies.iter().find(|e| e.id == enemy_id).unwrap();
+                        (dead_enemy.name.clone(), self.generate_loot_for_enemy(dead_enemy), dead_enemy.xp)
+                    };
+                    for item in &loot_items {
+                        state::add_to_inventory(&mut self.state.player.inventory, item.clone());
+                    }
+                    let gp = (xp_val / 5).max(1);
+                    self.state.player.gp += gp;
+                    self.state.last_loot.push(state::LootGroup { source_name: enemy_name, gp, items: loot_items });
+                }
+            } else {
+                self.state.last_roll = format!("[Spell] d20+{} = {} (MISS) vs AC {}", atk_result.bonus, atk_result.total, effective_ac);
+                self.state.log_combat(format!("player casts {} at {}: d20+{}={} vs AC {}. Misses.",
+                    spell.name, enemy_id, atk_result.bonus, atk_result.total, effective_ac));
+                fact_packet = format!(
+                    "You are the Dungeon Master. Narrate this spell missing its target. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                     --- ENGINE FACT PACKET ---\n\
+                     EVENT_TYPE: PlayerCombatAction\n\
+                     RESOLVED_ACTION:\n  actor: \"player\"\n  action: \"CAST_SPELL\"\n  spell: \"{}\"\n  target: \"{}\"\n  outcome: \"MISS\"\n\
+                     DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n\
+                     STATE_DELTAS:\n  - Player mana is now {}.\n",
+                    spell.name, enemy_id, atk_result.bonus, atk_result.total, effective_ac, self.state.player.mana
+                );
+            }
+
+            if let Some(room) = self.state.get_current_room_mut() {
+                room.enemies.retain(|e| e.hp > 0);
+            }
+            self.check_combat_state();
+            self.end_turn("player");
+
+            if self.state.game_mode != state::GameMode::Combat {
+                fact_packet.push_str("\nTRIGGER: COMBAT_END (Victory).");
+                self.state.generate_available_actions(&self.campaign);
+            } else {
+                self.advance_turn();
+                if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
+                    self.state.generate_available_actions(&self.campaign);
+                } else {
+                    self.state.available_actions.clear();
+                }
+            }
+
+            fact_packet
         }
     }
 
@@ -1536,6 +1742,7 @@ impl GameEngine {
 
         self.recover_ammo_from_combat(&current_room_id);
         self.state.current_room_id = target_room_id.clone();
+        self.state.player.mana = self.state.player.max_mana;
 
         if let Some(room) = self.state.rooms.iter_mut().find(|r| r.id == target_room_id) {
             room.visited = true;
@@ -1773,12 +1980,8 @@ impl GameEngine {
             Ok(result) => {
                 let is_hit = result.is_crit || result.total >= effective_ac;
                 if is_hit {
-                    let enemy_profile = self.state.get_current_room()
-                        .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
-                        .map(|e| e.damage_profile.clone())
-                        .unwrap_or_default();
                     let dmg_roll = crate::engine::combat::resolve_damage_roll(
-                        &dmg_dice, dmg_bonus, result.is_crit, weapon_damage_type, &enemy_profile,
+                        &dmg_dice, dmg_bonus, result.is_crit,
                     );
 
                     self.state.apply_damage(&target_id, dmg_roll, weapon_damage_type).unwrap();
@@ -1964,12 +2167,8 @@ impl GameEngine {
             Ok(result) => {
                 let is_hit = result.is_crit || result.total >= enemy_ac;
                 if is_hit {
-                    let enemy_profile = self.state.get_current_room()
-                        .and_then(|r| r.enemies.iter().find(|e| e.id == target_id))
-                        .map(|e| e.damage_profile.clone())
-                        .unwrap_or_default();
                     let dmg_roll = crate::engine::combat::resolve_damage_roll(
-                        &dmg_dice, dmg_bonus, result.is_crit, weapon_damage_type, &enemy_profile,
+                        &dmg_dice, dmg_bonus, result.is_crit,
                     );
                     self.state.apply_damage(&target_id, dmg_roll, weapon_damage_type).unwrap();
 
@@ -3610,5 +3809,41 @@ impl GameEngine {
               Do NOT roll dice. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n",
             user_input, self.state.lore_context, self.light_source_status(), inventory_str, equipped_weapon_str, room_items_str, enemies_str, mode_str
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    fn test_engine() -> GameEngine {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let campaign_dir = manifest_dir.join("campaigns").join("debug_campaign");
+        let campaign = crate::campaign::loader::load_campaign(&campaign_dir)
+            .expect("debug_campaign should load");
+        let campaign = Arc::new(campaign);
+        let state = state::SessionState::new_from_campaign(&campaign);
+        GameEngine::new_with_state(state, campaign)
+    }
+
+    #[test]
+    fn test_mana_regen_clamps_at_max_mana() {
+        let mut engine = test_engine();
+        engine.state.player.max_mana = 5;
+        engine.state.player.mana = 4;
+        engine.start_turn("player");
+        assert_eq!(engine.state.player.mana, 5);
+        engine.start_turn("player");
+        assert_eq!(engine.state.player.mana, 5, "should not exceed max_mana");
+    }
+
+    #[test]
+    fn test_room_entry_fully_restores_mana() {
+        let mut engine = test_engine();
+        engine.state.player.max_mana = 20;
+        engine.state.player.mana = 3;
+        engine.handle_move("MOVE_TO_try_loot");
+        assert_eq!(engine.state.player.mana, 20);
     }
 }
