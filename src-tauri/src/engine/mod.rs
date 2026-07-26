@@ -384,15 +384,15 @@ impl GameEngine {
             let atk_total = atk_roll + atk_bonus;
             let player_ac = compute_player_ac(&self.state.player);
 
-            let (dmg_dice, dmg_bonus) = self.state.get_current_room()
+            let (dmg_dice, dmg_bonus, dmg_type) = self.state.get_current_room()
                 .and_then(|r| r.enemies.iter().find(|e| e.x == *ex && e.y == *ey && e.name == *enemy_name))
-                .map(|e| (e.damage_dice.clone(), e.get_damage_bonus()))
-                .unwrap_or(("1d4".to_string(), 0));
+                .map(|e| (e.damage_dice.clone(), e.get_damage_bonus(), e.damage_type.unwrap_or_default()))
+                .unwrap_or(("1d4".to_string(), 0, state::DamageType::default()));
             if is_crit || atk_total >= player_ac {
                 let (dice_only, embedded) = roll_dice_expr(&dmg_dice);
                 let dice_roll = if is_crit { dice_only * 2 } else { dice_only };
                 let dmg_roll = dice_roll + embedded + dmg_bonus;
-                self.state.apply_damage("player", dmg_roll, state::DamageType::default()).unwrap(); // TODO(Phase 7): use enemy's own damage_type once added
+                self.state.apply_damage("player", dmg_roll, dmg_type).unwrap();
                 log.push_str(&format!("[OA] {} strikes {} as they flee! d20+{}={} vs AC {}. {} damage. ", 
                     enemy_name, provoked_by, atk_bonus, atk_total, player_ac, dmg_roll));
             } else {
@@ -487,7 +487,7 @@ impl GameEngine {
                 &enemy.damage_dice, enemy.get_damage_bonus(), result.is_crit,
             );
 
-            self.state.apply_damage(target_id, dmg_roll, state::DamageType::default()).unwrap(); // TODO(Phase 7): use enemy's own damage_type once added
+            self.state.apply_damage(target_id, dmg_roll, enemy.damage_type.unwrap_or_default()).unwrap();
             self.state.last_roll = format!("{} d20+{} = {} (HIT) Dmg={} ({}){}",
                 enemy.name, result.bonus, result.total, dmg_roll, enemy.damage_dice,
                 if result.is_crit { " [CRIT!]" } else { "" });
@@ -1239,7 +1239,9 @@ impl GameEngine {
                 Err(crate::engine::combat::AttackBlockReason::OutOfAmmo(_)) => unreachable!("spells never require ammo"),
             };
 
-            self.state.player.mana -= spell.mana_cost;
+            if !crate::engine::combat::is_innate_spell(&self.state.player, &spell_id) {
+                self.state.player.mana -= spell.mana_cost;
+            }
 
             let dmg_dice = spell.damage_dice.clone().unwrap();
             let weapon_damage_type = spell.damage_type.unwrap_or_default();

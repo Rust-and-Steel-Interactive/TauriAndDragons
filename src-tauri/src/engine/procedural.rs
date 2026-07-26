@@ -389,13 +389,14 @@ pub fn generate_item_instance(
                 discipline: base_item.discipline.clone(),
                 known_spell_ids: base_item.known_spell_ids.clone(),
                 scroll_spell_id: base_item.scroll_spell_id.clone(),
+                innate_spell_id: base_item.innate_spell_id.clone(),
             });
         } else {
             let display_name = generate_tool_name(tier_val, &base_item.name);
+
             let gp_value = (base_item.base_value as f32 * (tier_val as f32 * 0.5).max(1.0)) as i32;
             let description = Some(format!("{} with a quality bonus of +{}.",
                 display_name, get_tool_quality_bonus(tier_val)));
-            
             let instance_id = format!("proc_{}", &uuid::Uuid::new_v4().to_string()[..8]);
             let v_id = display_name.clone();
             
@@ -435,6 +436,7 @@ pub fn generate_item_instance(
                 discipline: base_item.discipline.clone(),
                 known_spell_ids: base_item.known_spell_ids.clone(),
                 scroll_spell_id: base_item.scroll_spell_id.clone(),
+                innate_spell_id: base_item.innate_spell_id.clone(),
             });
         }
     }
@@ -516,6 +518,7 @@ pub fn generate_item_instance(
         discipline: base_item.discipline.clone(),
         known_spell_ids: base_item.known_spell_ids.clone(),
         scroll_spell_id: base_item.scroll_spell_id.clone(),
+        innate_spell_id: base_item.innate_spell_id.clone(),
     })
 }
 
@@ -829,6 +832,11 @@ pub fn generate_enemy_instance(campaign: &CampaignData, enemy_id: &str, scale: f
         perks: base.perks.clone(),
         loot_table: base.loot_table.clone(),
         damage_profile: base.damage_profile.clone(),
+        range: base.range.clone(),
+        damage_type: base.damage_type,
+        known_spell_ids: base.known_spell_ids.clone(),
+        mana: base.max_mana,
+        max_mana: base.max_mana,
         speed: base.speed,
         x: 1,
         y: 1,

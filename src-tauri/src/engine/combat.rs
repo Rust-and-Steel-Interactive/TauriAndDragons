@@ -129,7 +129,18 @@ pub enum CastBlockReason {
 
 /// The single gate through which all spellcasting eligibility flows.
 /// Does NOT deduct mana, resolve damage/healing, or advance any turn state.
+/// True if the player's currently-equipped weapon grants this spell innately.
+pub fn is_innate_spell(player: &Player, spell_id: &str) -> bool {
+    player.primary_hand.as_deref()
+        .and_then(|id| player.inventory.iter().find(|i| i.instance_id == id))
+        .and_then(|w| w.innate_spell_id.as_deref())
+        == Some(spell_id)
+}
+
 pub fn can_cast_spell(player: &Player, spell_id: &str, spell: &BaseSpell) -> Result<(), CastBlockReason> {
+    if is_innate_spell(player, spell_id) {
+        return Ok(());
+    }
     if !player.has_resonance {
         return Err(CastBlockReason::NoResonance);
     }
@@ -451,6 +462,35 @@ mod tests {
         let player = Player { has_resonance: true, mana: 100, known_spell_ids: HashSet::from(["bolt".to_string()]), ..Player::default_for_test() };
         let spell = test_spell(5, &[]);
         assert_eq!(can_cast_spell(&player, "bolt", &spell), Ok(()));
+    }
+
+    #[test]
+    fn test_is_innate_spell_matches_equipped_weapon_only() {
+        let wand = ItemInstance { instance_id: "w1".to_string(), template_id: "wand".to_string(), item_class: "MAGIC".to_string(), innate_spell_id: Some("fire_bolt".to_string()), ..ItemInstance::default_for_test() };
+        let player = Player { primary_hand: Some("w1".to_string()), inventory: vec![wand], ..Player::default_for_test() };
+        assert!(is_innate_spell(&player, "fire_bolt"));
+        assert!(!is_innate_spell(&player, "fireball"));
+    }
+
+    #[test]
+    fn test_can_cast_spell_innate_bypasses_all_gates() {
+        let wand = ItemInstance { instance_id: "w1".to_string(), template_id: "wand".to_string(), item_class: "MAGIC".to_string(), innate_spell_id: Some("fire_bolt".to_string()), ..ItemInstance::default_for_test() };
+        let player = Player {
+            has_resonance: false, mana: 0, max_mana: 0,
+            known_spell_ids: HashSet::new(),
+            primary_hand: Some("w1".to_string()), inventory: vec![wand],
+            ..Player::default_for_test()
+        };
+        let spell = test_spell(999, &[]);
+        assert_eq!(can_cast_spell(&player, "fire_bolt", &spell), Ok(()));
+    }
+
+    #[test]
+    fn test_can_cast_spell_still_gates_normally_for_a_different_spell() {
+        let wand = ItemInstance { instance_id: "w1".to_string(), template_id: "wand".to_string(), item_class: "MAGIC".to_string(), innate_spell_id: Some("fire_bolt".to_string()), ..ItemInstance::default_for_test() };
+        let player = Player { has_resonance: false, primary_hand: Some("w1".to_string()), inventory: vec![wand], known_spell_ids: HashSet::from(["fireball".to_string()]), mana: 100, ..Player::default_for_test() };
+        let spell = test_spell(5, &[]);
+        assert_eq!(can_cast_spell(&player, "fireball", &spell), Err(CastBlockReason::NoResonance));
     }
 
     #[test]

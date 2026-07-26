@@ -308,6 +308,9 @@ pub fn get_weapon_range(player: &Player) -> WeaponRange {
 }
 
 pub fn get_enemy_attack_range(enemy: &Enemy) -> WeaponRange {
+    if let Some(explicit) = &enemy.range {
+        return explicit.clone();
+    }
     let has_ranged = enemy.perks.iter().any(|p| p == "RANGED_ATTACK");
     if has_ranged {
         WeaponRange { normal: 6, long: Some(12) }
@@ -685,6 +688,11 @@ pub struct ItemInstance {
     /// item_class == "SPELL_SCROLL".
     #[serde(default)]
     pub scroll_spell_id: Option<String>,
+    /// If set, equipping this item grants the wielder the ability to cast this
+    /// spell as an artefact power — independent of Resonance, known_spell_ids,
+    /// and mana. The item itself is the source of the magic, not the wielder.
+    #[serde(default)]
+    pub innate_spell_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -782,6 +790,16 @@ pub struct Enemy {
     pub loot_table: Vec<crate::campaign::schema::LootDrop>,
     #[serde(default)]
     pub damage_profile: DamageProfile,
+    #[serde(default)]
+    pub range: Option<WeaponRange>,
+    #[serde(default)]
+    pub damage_type: Option<DamageType>,
+    #[serde(default)]
+    pub known_spell_ids: Vec<String>,
+    #[serde(default)]
+    pub mana: i32,
+    #[serde(default)]
+    pub max_mana: i32,
     pub speed: i32,
     pub x: i32,
     pub y: i32,
@@ -1239,7 +1257,14 @@ impl SessionState {
                                 }
                             }
                         }
-                        for spell_id in &self.player.known_spell_ids {
+                        let mut castable_spell_ids: std::collections::HashSet<String> = self.player.known_spell_ids.clone();
+                        if let Some(innate_id) = self.player.primary_hand.as_deref()
+                            .and_then(|id| self.player.inventory.iter().find(|i| i.instance_id == id))
+                            .and_then(|w| w.innate_spell_id.clone())
+                        {
+                            castable_spell_ids.insert(innate_id);
+                        }
+                        for spell_id in &castable_spell_ids {
                             let spell = match campaign.spells.base_spells.get(spell_id) {
                                 Some(s) => s,
                                 None => continue,
@@ -1828,6 +1853,8 @@ mod tests {
                     },
                     speed: 30, x: 0, y: 0, awareness: AwarenessState::Unaware,
                     behaviour: NpcBehaviour::Idle, detection_range: 5,
+                    range: None, damage_type: None,
+                    known_spell_ids: vec![], mana: 0, max_mana: 0,
                 }],
                 loot: vec![], chests: vec![], hidden_caches: vec![],
                 is_looted: false, loot_noticed: false,
@@ -1886,6 +1913,53 @@ mod tests {
         assert!(player.spellbooks.is_empty());
         assert!(player.known_spell_ids.is_empty());
     }
+
+    #[test]
+    fn test_get_enemy_attack_range_prefers_explicit_range_over_perk_default() {
+        let enemy = Enemy {
+            perks: vec!["RANGED_ATTACK".to_string()],
+            range: Some(WeaponRange { normal: 20, long: Some(40) }),
+            ..Enemy::default_for_test()
+        };
+        let range = get_enemy_attack_range(&enemy);
+        assert_eq!(range.normal, 20);
+        assert_eq!(range.long, Some(40));
+    }
+
+    #[test]
+    fn test_get_enemy_attack_range_falls_back_to_perk_default_when_unset() {
+        let enemy = Enemy { perks: vec!["RANGED_ATTACK".to_string()], range: None, ..Enemy::default_for_test() };
+        assert_eq!(get_enemy_attack_range(&enemy), WeaponRange { normal: 6, long: Some(12) });
+    }
+} 
+
+impl Enemy {
+    pub(crate) fn default_for_test() -> Self {
+        Enemy {
+            id: "test_enemy".to_string(),
+            template_id: "test".to_string(),
+            name: "Test Enemy".to_string(),
+            hp: 10, max_hp: 10, ac: 10,
+            strength: 10, dexterity: 10, constitution: 10,
+            intelligence: 10, wisdom: 10, charisma: 10,
+            damage_dice: "1d4".to_string(),
+            attack_bonus: 0, xp: 0,
+            studied: false,
+            equipped_armour: vec![],
+            perks: vec![],
+            loot_table: vec![],
+            damage_profile: DamageProfile::default(),
+            speed: 30, x: 0, y: 0,
+            awareness: AwarenessState::Unaware,
+            behaviour: NpcBehaviour::Idle,
+            detection_range: 5,
+            range: None,
+            damage_type: None,
+            known_spell_ids: vec![],
+            mana: 0,
+            max_mana: 0,
+        }
+    }
 }
 
 impl ItemInstance {
@@ -1926,6 +2000,7 @@ impl ItemInstance {
             discipline: None,
             known_spell_ids: vec![],
             scroll_spell_id: None,
+            innate_spell_id: None,
         }
     }
 }

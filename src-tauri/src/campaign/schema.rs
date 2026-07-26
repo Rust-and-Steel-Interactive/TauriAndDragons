@@ -162,6 +162,42 @@ pub struct BaseItem {
     /// item_class == "SPELL_SCROLL".
     #[serde(default)]
     pub scroll_spell_id: Option<String>,
+    /// If set, equipping this item grants the wielder the ability to cast this
+    /// spell as an artefact power — independent of Resonance, known_spell_ids,
+    /// and mana. The item itself is the source of the magic, not the wielder.
+    #[serde(default)]
+    pub innate_spell_id: Option<String>,
+}
+
+impl BaseItem {
+    pub(crate) fn default_for_test() -> Self {
+        BaseItem {
+            name: String::new(),
+            item_class: String::new(),
+            base_damage_dice: None,
+            weight: 0.0,
+            base_value: 0,
+            armor_slot: None,
+            base_ac_bonus: None,
+            armour_category: None,
+            dex_cap: None,
+            base_effect: None,
+            light_radius: None,
+            duration_turns: None,
+            handedness: None,
+            max_duration: None,
+            fuel_restore: None,
+            tier: None,
+            utility_slots: None,
+            damage_type: None,
+            weapon_range: None,
+            ammo_type: None,
+            discipline: None,
+            known_spell_ids: vec![],
+            scroll_spell_id: None,
+            innate_spell_id: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -276,6 +312,16 @@ pub struct BaseEnemy {
     pub loot_table: Vec<LootDrop>,
     #[serde(default)]
     pub damage_profile: crate::engine::state::DamageProfile,
+    #[serde(default)]
+    pub range: Option<WeaponRange>,
+    #[serde(default, deserialize_with = "deserialize_optional_damage_type_loose")]
+    pub damage_type: Option<DamageType>,
+    #[serde(default)]
+    pub known_spell_ids: Vec<String>,
+    #[serde(default)]
+    pub mana: i32,
+    #[serde(default)]
+    pub max_mana: i32,
     #[serde(default = "default_speed")]
     pub speed: i32,
 }

@@ -47,6 +47,7 @@ pub fn load_campaign(campaign_dir: &Path) -> anyhow::Result<CampaignData> {
     let (world_seed, region_seed, dungeon_seed, _) = crate::campaign::schema::derive_seed_hierarchy(master_seed);
 
     validate_spell_weapon_references(&spells, &items, campaign_dir);
+    validate_item_spell_references(&items, &spells, campaign_dir);
 
     Ok(CampaignData {
         main,
@@ -61,6 +62,50 @@ pub fn load_campaign(campaign_dir: &Path) -> anyhow::Result<CampaignData> {
         region_seed,
         dungeon_seed,
     })
+}
+
+fn validate_item_spell_references(items: &ItemRegistry, spells: &SpellRegistry, campaign_dir: &Path) {
+    for (item_id, item) in &items.base_items {
+        match item.item_class.as_str() {
+            "SPELLBOOK" => {
+                if item.known_spell_ids.is_empty() {
+                    eprintln!(
+                        "WARN: campaign '{}' SPELLBOOK item '{}' has an empty known_spell_ids list — learning it would grant nothing",
+                        campaign_dir.display(), item_id
+                    );
+                }
+                for spell_id in &item.known_spell_ids {
+                    if !spells.base_spells.contains_key(spell_id) {
+                        eprintln!(
+                            "WARN: campaign '{}' SPELLBOOK item '{}' references unknown spell '{}' (not found in spells.json)",
+                            campaign_dir.display(), item_id, spell_id
+                        );
+                    }
+                }
+            }
+            "SPELL_SCROLL" => match &item.scroll_spell_id {
+                None => eprintln!(
+                    "WARN: campaign '{}' SPELL_SCROLL item '{}' has no scroll_spell_id set — reading it would teach nothing",
+                    campaign_dir.display(), item_id
+                ),
+                Some(spell_id) if !spells.base_spells.contains_key(spell_id) => eprintln!(
+                    "WARN: campaign '{}' SPELL_SCROLL item '{}' references unknown spell '{}' (not found in spells.json)",
+                    campaign_dir.display(), item_id, spell_id
+                ),
+                Some(_) => {}
+            },
+            _ => {}
+        }
+
+        if let Some(innate_id) = &item.innate_spell_id {
+            if !spells.base_spells.contains_key(innate_id) {
+                eprintln!(
+                    "WARN: campaign '{}' item '{}' has innate_spell_id '{}' that doesn't exist in spells.json",
+                    campaign_dir.display(), item_id, innate_id
+                );
+            }
+        }
+    }
 }
 
 fn validate_spell_weapon_references(spells: &SpellRegistry, items: &ItemRegistry, campaign_dir: &Path) {
@@ -190,5 +235,38 @@ mod tests {
 
         // Confirm map has 2 rooms
         assert_eq!(data.map.rooms.len(), 2);
+    }
+
+    #[test]
+    fn test_validate_item_spell_references_does_not_panic_on_dangling_or_empty() {
+        use std::collections::HashMap;
+        use std::path::Path;
+
+        let mut items = HashMap::new();
+        items.insert("empty_spellbook".to_string(), BaseItem {
+            item_class: "SPELLBOOK".to_string(),
+            known_spell_ids: vec![],
+            ..BaseItem::default_for_test()
+        });
+        items.insert("dangling_scroll".to_string(), BaseItem {
+            item_class: "SPELL_SCROLL".to_string(),
+            scroll_spell_id: Some("nonexistent_spell".to_string()),
+            ..BaseItem::default_for_test()
+        });
+        items.insert("blank_scroll".to_string(), BaseItem {
+            item_class: "SPELL_SCROLL".to_string(),
+            scroll_spell_id: None,
+            ..BaseItem::default_for_test()
+        });
+        items.insert("dangling_wand".to_string(), BaseItem {
+            item_class: "MAGIC".to_string(),
+            innate_spell_id: Some("nonexistent_spell".to_string()),
+            ..BaseItem::default_for_test()
+        });
+
+        let item_registry = ItemRegistry { base_items: items };
+        let spell_registry = SpellRegistry { base_spells: HashMap::new() };
+
+        validate_item_spell_references(&item_registry, &spell_registry, Path::new("test_campaign"));
     }
 }
