@@ -34,7 +34,7 @@ pub fn roll_dice_expr(expression: &str) -> (i32, i32) {
     (dice_total, bonus)
 }
 
-pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(), CommandRejection> {
+pub fn validate_and_execute(cmd: &Command, state: &mut SessionState, campaign: &crate::campaign::schema::CampaignData) -> Result<(), CommandRejection> {
     match cmd {
         Command::Damage { target, amount, damage_type } => {
             if target != "player" {
@@ -143,7 +143,7 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
                 if let Some(msg) = state.equip_to_slot(item_id) {
                     state.last_combat_event = msg;
                 }
-                state.generate_available_actions();
+                state.generate_available_actions(campaign);
                 Ok(())
             } else {
                 Err(CommandRejection::NonCritical("Weapon not found in inventory.".to_string()))
@@ -287,7 +287,7 @@ pub fn validate_and_execute(cmd: &Command, state: &mut SessionState) -> Result<(
                         state.player.inventory.push(room_item);
                     }
                     
-                    state.generate_available_actions();
+                    state.generate_available_actions(campaign);
                     Ok(())
                 } else {
                     Err(CommandRejection::NonCritical(format!("Item '{}' is not in this room.", item_id)))

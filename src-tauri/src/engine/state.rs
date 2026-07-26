@@ -1090,7 +1090,7 @@ impl SessionState {
             ammo_consumed_this_combat: HashMap::new(),
         };
 
-        new_state.generate_available_actions();
+        new_state.generate_available_actions(campaign);
         new_state
     }
 
@@ -1103,7 +1103,7 @@ impl SessionState {
         self.combat_log.push(entry);
     }
 
-    pub fn generate_available_actions(&mut self) {
+    pub fn generate_available_actions(&mut self, campaign: &crate::campaign::schema::CampaignData) {
         let mut actions = vec![];
         
         if self.game_mode == GameMode::GameOver {
@@ -1225,6 +1225,36 @@ impl SessionState {
                         if self.can_attack_with_equipped_weapon() {
                             for enemy in &visible_enemies {
                                 actions.push(format!("ACTION_ATTACK_{}", enemy.id));
+                            }
+                        }
+                        // ── Spell casting actions (single-target and AoE) ──
+                        let mut aoe_candidate_tiles: std::collections::HashSet<(i32, i32)> = std::collections::HashSet::new();
+                        for enemy in &visible_enemies {
+                            for dx in -1..=1 {
+                                for dy in -1..=1 {
+                                    let (tx, ty) = (enemy.x + dx, enemy.y + dy);
+                                    if tx >= 0 && ty >= 0 && tx < room.tile_width && ty < room.tile_height {
+                                        aoe_candidate_tiles.insert((tx, ty));
+                                    }
+                                }
+                            }
+                        }
+                        for spell_id in &self.player.known_spell_ids {
+                            let spell = match campaign.spells.base_spells.get(spell_id) {
+                                Some(s) => s,
+                                None => continue,
+                            };
+                            if crate::engine::combat::can_cast_spell(&self.player, spell_id, spell).is_err() {
+                                continue;
+                            }
+                            if spell.area_of_effect.is_some() {
+                                for &(tx, ty) in &aoe_candidate_tiles {
+                                    actions.push(format!("ACTION_CAST_{}_AOE_{}_{}", spell_id, tx, ty));
+                                }
+                            } else {
+                                for enemy in &visible_enemies {
+                                    actions.push(format!("ACTION_CAST_{}_{}", spell_id, enemy.id));
+                                }
                             }
                         }
                         actions.push("ACTION_DASH".to_string());

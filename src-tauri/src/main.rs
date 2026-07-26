@@ -154,7 +154,8 @@ async fn generate_narration(
                         engine.advance_turn();
                         // If advancing put us back on the player (e.g., only 1 enemy), generate actions
                         if engine.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                            engine.state.generate_available_actions();
+                            let campaign = engine.campaign.clone();
+                            engine.state.generate_available_actions(&campaign);
                         } else {
                             engine.state.available_actions.clear(); // Enemy's turn, lock UI
                         }
@@ -229,7 +230,8 @@ async fn generate_narration(
                             if next_is_player {
                                 let app_state = app_handle.state::<AppState>();
                                 let mut engine = app_state.engine.lock().unwrap();
-                                engine.state.generate_available_actions();
+                                let campaign = engine.campaign.clone();
+                                engine.state.generate_available_actions(&campaign);
                                 let _ = app_handle.emit("state-updated", &engine.state);
                                 break;
                             } else {
@@ -379,7 +381,8 @@ async fn player_button_action(
                         }
                         let app_state = app_handle.state::<AppState>();
                         let mut engine = app_state.engine.lock().unwrap();
-                        engine.state.generate_available_actions();
+                        let campaign = engine.campaign.clone();
+                        engine.state.generate_available_actions(&campaign);
                         let _ = app_handle.emit("state-updated", &engine.state);
                         break;
                     } else {

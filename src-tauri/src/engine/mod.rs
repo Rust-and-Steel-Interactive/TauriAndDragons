@@ -82,7 +82,7 @@ impl GameEngine {
         for cmd_value in &llm_response.commands {
             match serde_json::from_value::<crate::engine::commands::Command>(cmd_value.clone()) {
                 Ok(cmd) => {
-                    match crate::engine::validator::validate_and_execute(&cmd, &mut self.state) {
+                    match crate::engine::validator::validate_and_execute(&cmd, &mut self.state, &self.campaign) {
                         Ok(_) => println!("✅ Command executed: {:?}", cmd),
                         Err(crate::engine::validator::CommandRejection::Critical(msg)) => {
                             println!("🚫 Command CRITICAL rejection: {:?} - {}", cmd, msg);
@@ -309,7 +309,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -1088,7 +1088,7 @@ impl GameEngine {
                 _ => return "SYS_MSG:Invalid AoE target coordinates.".to_string(),
             };
 
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
             format!(
                 "SYS_MSG:You gather power to cast {} toward ({}, {}), but the spell's full effect isn't implemented yet.",
                 spell.name, tx, ty
@@ -1105,7 +1105,7 @@ impl GameEngine {
                 return "SYS_MSG:That target could not be found.".to_string();
             }
 
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
             format!(
                 "SYS_MSG:You gather power to cast {} at your target, but the spell's full effect isn't implemented yet.",
                 spell.name
@@ -1436,7 +1436,7 @@ impl GameEngine {
             }
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
 
         let discovery = self.check_discoveries();
 
@@ -1660,9 +1660,9 @@ impl GameEngine {
 
             // Note: enemy turns are NOT processed here — main.rs combat loop
             // handles all enemy turns visibly so the player sees their actions and rolls
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         }
 
         fact_packet
@@ -1865,11 +1865,11 @@ impl GameEngine {
 
         if self.state.game_mode != state::GameMode::Combat {
             fact_packet.push_str("\nTRIGGER: COMBAT_END (Victory).");
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.advance_turn();
             if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                self.state.generate_available_actions();
+                self.state.generate_available_actions(&self.campaign);
             } else {
                 self.state.available_actions.clear();
             }
@@ -2040,11 +2040,11 @@ impl GameEngine {
 
         if self.state.game_mode != state::GameMode::Combat {
             fact_packet.push_str("\nTRIGGER: COMBAT_END (Victory).");
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.advance_turn();
             if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                self.state.generate_available_actions();
+                self.state.generate_available_actions(&self.campaign);
             } else {
                 self.state.available_actions.clear();
             }
@@ -2070,7 +2070,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -2098,7 +2098,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -2126,7 +2126,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -2150,7 +2150,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -2176,7 +2176,7 @@ impl GameEngine {
         self.end_turn("player");
         self.advance_turn();
         if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         } else {
             self.state.available_actions.clear();
         }
@@ -2229,7 +2229,7 @@ impl GameEngine {
             self.end_turn("player");
             self.advance_turn();
         }
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         fact_packet
     }
 
@@ -2272,7 +2272,7 @@ impl GameEngine {
                 self.state.current_room_id = flee_to_str.clone();
                 self.update_visibility();
                 self.check_combat_state();
-                self.state.generate_available_actions();
+                self.state.generate_available_actions(&self.campaign);
 
                 self.state.log_combat(format!("{} flees to {}.", "player", flee_to_str));
 
@@ -2302,7 +2302,7 @@ impl GameEngine {
                     self.end_turn("player");
                     self.advance_turn();
                     if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                        self.state.generate_available_actions();
+                        self.state.generate_available_actions(&self.campaign);
                     } else {
                         self.state.available_actions.clear();
                     }
@@ -2325,7 +2325,7 @@ impl GameEngine {
                     self.end_turn("player");
                     self.advance_turn();
                     if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                        self.state.generate_available_actions();
+                        self.state.generate_available_actions(&self.campaign);
                     } else {
                         self.state.available_actions.clear();
                     }
@@ -2452,7 +2452,7 @@ impl GameEngine {
             });
             self.update_visibility();
             self.state.log_combat(format!("You ignite the {}. (Radius {}, {} turns of fuel)", lantern_name, radius, fuel));
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
             return format!(
                 "You are the Dungeon Master. The player ignites their lantern. Narrate the warm steady glow. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
                  --- ENGINE FACT PACKET ---\n\
@@ -2576,12 +2576,12 @@ impl GameEngine {
             self.end_turn("player");
             self.advance_turn();
             if self.state.get_current_turn_id().map(|id| id == "player").unwrap_or(false) {
-                self.state.generate_available_actions();
+                self.state.generate_available_actions(&self.campaign);
             } else {
                 self.state.available_actions.clear();
             }
         } else {
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
         }
         fact_packet
     }
@@ -2628,7 +2628,7 @@ impl GameEngine {
             let is_two_handed = self.state.player.inventory.iter()
                 .any(|i| i.instance_id == item_id && i.handedness.as_deref() == Some("TWO_HANDED"));
             if is_two_handed && (self.state.player.primary_hand.is_some() || self.state.player.secondary_hand.is_some()) {
-                self.state.generate_available_actions();
+                self.state.generate_available_actions(&self.campaign);
                 let blocked_msg = if hands_occupied.is_empty() {
                     format!(
                         "You are the Dungeon Master. The player tries to equip the {} which requires two hands, but their hands are not free. Narrate the Dungeon Master preventing this. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
@@ -2666,7 +2666,7 @@ impl GameEngine {
             }
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player equipping a new weapon. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2690,7 +2690,7 @@ impl GameEngine {
             }
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player equipping armour. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2708,7 +2708,7 @@ impl GameEngine {
             self.state.player.inventory.push(item.clone());
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player removing armour. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2731,7 +2731,7 @@ impl GameEngine {
             }
             _ => return "SYS_MSG:Invalid hand.".to_string(),
         }
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. The player stows their weapon. Narrate the motion. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2784,7 +2784,7 @@ impl GameEngine {
             item_name = format!("item_{}", item_id);
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. The player picked up an item ({}). Narrate this. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2841,7 +2841,7 @@ impl GameEngine {
             }
             self.update_visibility();
             self.state.log_combat("You pick up the burning torch from the ground.".to_string());
-            self.state.generate_available_actions();
+            self.state.generate_available_actions(&self.campaign);
             format!(
                 "You are the Dungeon Master. Narrate the player picking up a burning torch from the ground. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
                  --- ENGINE FACT PACKAGE ---\n\
@@ -2890,7 +2890,7 @@ impl GameEngine {
             self.state.log_combat(format!("You refill the lantern with oil. Fuel: {} turns.", new_fuel));
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player refilling their lantern with oil. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2937,7 +2937,7 @@ impl GameEngine {
         self.state.player.utility_slots = utility_slots;
 
         self.state.log_combat("You equip the belt.".to_string());
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player equipping a belt. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -2965,7 +2965,7 @@ impl GameEngine {
         self.state.player.inventory.append(&mut items_to_return);
 
         self.state.log_combat("You unequip the belt.".to_string());
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player unequipping a belt. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -3044,7 +3044,7 @@ impl GameEngine {
         self.update_visibility();
 
         self.state.log_combat(format!("You mount the item to utility slot {}.", slot_idx + 1));
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player mounting an item to their belt. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -3083,7 +3083,7 @@ impl GameEngine {
         self.state.player.inventory.push(item);
         self.update_visibility();
         self.state.log_combat(format!("You unmount the item from utility slot {}.", slot_idx + 1));
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player unmounting an item from their belt. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -3127,7 +3127,7 @@ impl GameEngine {
         }
 
         self.state.log_combat(format!("You study the {}.", display_name));
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player poring over a spellbook, absorbing new arcane knowledge. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -3158,7 +3158,7 @@ impl GameEngine {
         self.state.player.inventory.retain(|i| i.instance_id != item_id || i.quantity > 0);
 
         self.state.log_combat(format!("You read the {} and the words burn into your memory.", display_name));
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         format!(
             "You are the Dungeon Master. Narrate the player unrolling a scroll and reading its incantation aloud, the words dissolving into motes of light as the magic is absorbed. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
              --- ENGINE FACT PACKET ---\n\
@@ -3213,7 +3213,7 @@ impl GameEngine {
             }
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         fact_packet
     }
 
@@ -3268,7 +3268,7 @@ impl GameEngine {
             );
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         fact_packet
     }
 
@@ -3401,7 +3401,7 @@ impl GameEngine {
             _ => {}
         }
 
-        self.state.generate_available_actions();
+        self.state.generate_available_actions(&self.campaign);
         fact_packet
     }
 
