@@ -532,6 +532,16 @@ pub struct LootGroup {
     pub items: Vec<ItemInstance>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Spellbook {
+    pub id: String,
+    pub name: String,
+    pub discipline: String,
+    pub tier: i32,
+    #[serde(default)]
+    pub known_spell_ids: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionState {
     pub player: Player,
@@ -585,6 +595,16 @@ pub struct Player {
     pub utility_slots: Vec<Option<ItemInstance>>,
     #[serde(default)]
     pub damage_profile: DamageProfile,
+    #[serde(default)]
+    pub has_resonance: bool,
+    #[serde(default)]
+    pub mana: i32,
+    #[serde(default)]
+    pub max_mana: i32,
+    #[serde(default)]
+    pub spellbooks: Vec<Spellbook>,
+    #[serde(default)]
+    pub known_spell_ids: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -653,6 +673,18 @@ pub struct ItemInstance {
     /// None on everything else.
     #[serde(default)]
     pub ammo_type: Option<String>,
+    /// Magical discipline this spellbook covers (e.g. "Fire", "Force"). Only
+    /// meaningful when item_class == "SPELLBOOK".
+    #[serde(default)]
+    pub discipline: Option<String>,
+    /// Spell ids this spellbook grants when learned. Only meaningful when
+    /// item_class == "SPELLBOOK".
+    #[serde(default)]
+    pub known_spell_ids: Vec<String>,
+    /// The single spell id this scroll teaches when read. Only meaningful when
+    /// item_class == "SPELL_SCROLL".
+    #[serde(default)]
+    pub scroll_spell_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1033,6 +1065,11 @@ impl SessionState {
                 equipped_belt,
                 utility_slots,
                 damage_profile: DamageProfile::default(),
+                has_resonance: false,
+                mana: 0,
+                max_mana: 0,
+                spellbooks: vec![],
+                known_spell_ids: HashSet::new(),
             },
             current_room_id: campaign.map.rooms.first().map(|r| r.id.clone()).unwrap_or_default(),
             game_mode: GameMode::Exploration,
@@ -1084,12 +1121,6 @@ impl SessionState {
             self.available_actions = vec![];
             return;
         }
-
-        let attack_blocked_by_ammo = self.get_equipped_weapon()
-            .filter(|w| w.item_class == "RANGED")
-            .and_then(|w| w.ammo_type.clone())
-            .map(|ammo_type| !has_matching_ammo(&self.player, &ammo_type))
-            .unwrap_or(false);
 
         if let Some(room) = self.get_current_room() {
             // ── No enemies in room: free exploration ──
@@ -1191,7 +1222,7 @@ impl SessionState {
                     }
 
                     if can_do_action {
-                        if !attack_blocked_by_ammo {
+                        if self.can_attack_with_equipped_weapon() {
                             for enemy in &visible_enemies {
                                 actions.push(format!("ACTION_ATTACK_{}", enemy.id));
                             }
@@ -1263,8 +1294,9 @@ impl SessionState {
                         }
                     }
 
+                    let can_attack_now = self.can_attack_with_equipped_weapon();
                     for enemy in &visible_enemies {
-                        if !attack_blocked_by_ammo {
+                        if can_attack_now {
                             actions.push(format!("ATTACK_{}", enemy.id));
                         }
                         if !enemy.studied {
@@ -1297,6 +1329,12 @@ impl SessionState {
                     if !already_equipped {
                         actions.push(format!("EQUIP_ARMOUR_{}", item.instance_id));
                     }
+                }
+                if item.item_class == "SPELLBOOK" {
+                    actions.push(format!("LEARN_SPELLBOOK_{}", item.instance_id));
+                }
+                if item.item_class == "SPELL_SCROLL" {
+                    actions.push(format!("READ_SCROLL_{}", item.instance_id));
                 }
             }
         }
@@ -1475,6 +1513,21 @@ impl SessionState {
             .secondary_hand
             .as_ref()
             .and_then(|id| self.player.inventory.iter().find(|i| i.instance_id == *id))
+    }
+
+    /// True if the player's currently-equipped weapon can be used to attack right now —
+    /// i.e. it's not a RANGED weapon requiring ammo it doesn't have. Melee, MAGIC, and
+    /// ammo-less RANGED weapons are always attack-capable from this check's perspective
+    /// (other gating, like action economy in combat, is handled separately).
+    pub fn can_attack_with_equipped_weapon(&self) -> bool {
+        if let Some(w) = self.get_equipped_weapon() {
+            if w.item_class == "RANGED" {
+                if let Some(ammo_type) = &w.ammo_type {
+                    return has_matching_ammo(&self.player, ammo_type);
+                }
+            }
+        }
+        true
     }
 
     pub fn get_current_turn_id(&self) -> Option<&String> {
@@ -1717,6 +1770,11 @@ mod tests {
                 active_light_source: None, equipped_belt: None,
                 utility_slots: vec![], inventory: vec![],
                 damage_profile: DamageProfile::default(),
+                has_resonance: false,
+                mana: 0,
+                max_mana: 0,
+                spellbooks: vec![],
+                known_spell_ids: HashSet::new(),
             },
             current_room_id: "room_1".into(),
             game_mode: GameMode::Exploration,
@@ -1765,6 +1823,39 @@ mod tests {
         let enemy = state.rooms[0].enemies.iter().find(|e| e.id == "enemy_1").unwrap();
         assert_eq!(enemy.hp, 15, "10 bludgeoning vs resistance should deal 5 damage");
     }
+
+    #[test]
+    fn test_player_deserializes_without_resonance_fields_old_save_compat() {
+        let json = r#"{
+            "name": "Test", "hp": 10, "max_hp": 10, "ac": 10, "gp": 0,
+            "strength": 10, "dexterity": 10, "constitution": 10,
+            "intelligence": 10, "wisdom": 10, "charisma": 10,
+            "proficiency_bonus": 2, "inventory": [],
+            "primary_hand": null, "secondary_hand": null,
+            "equipped_armour": [], "thieves_tools_proficiency": false,
+            "speed": 30, "x": 0, "y": 0
+        }"#;
+        let player: Player = serde_json::from_str(json).unwrap();
+        assert_eq!(player.has_resonance, false);
+        assert_eq!(player.mana, 0);
+        assert_eq!(player.max_mana, 0);
+    }
+
+    #[test]
+    fn test_player_deserializes_without_spellbook_fields_old_save_compat() {
+        let json = r#"{
+            "name": "Test", "hp": 10, "max_hp": 10, "ac": 10, "gp": 0,
+            "strength": 10, "dexterity": 10, "constitution": 10,
+            "intelligence": 10, "wisdom": 10, "charisma": 10,
+            "proficiency_bonus": 2, "inventory": [],
+            "primary_hand": null, "secondary_hand": null,
+            "equipped_armour": [], "thieves_tools_proficiency": false,
+            "speed": 30, "x": 0, "y": 0
+        }"#;
+        let player: Player = serde_json::from_str(json).unwrap();
+        assert!(player.spellbooks.is_empty());
+        assert!(player.known_spell_ids.is_empty());
+    }
 }
 
 impl ItemInstance {
@@ -1802,6 +1893,36 @@ impl ItemInstance {
             damage_type: None,
             weapon_range: None,
             ammo_type: None,
+            discipline: None,
+            known_spell_ids: vec![],
+            scroll_spell_id: None,
+        }
+    }
+}
+
+impl Player {
+    pub(crate) fn default_for_test() -> Self {
+        Player {
+            name: "Test".to_string(),
+            hp: 20, max_hp: 20, ac: 10, gp: 0,
+            strength: 10, dexterity: 10, constitution: 10,
+            intelligence: 10, wisdom: 10, charisma: 10,
+            proficiency_bonus: 2,
+            inventory: vec![],
+            primary_hand: None,
+            secondary_hand: None,
+            equipped_armour: vec![],
+            thieves_tools_proficiency: false,
+            speed: 30, x: 0, y: 0,
+            active_light_source: None,
+            equipped_belt: None,
+            utility_slots: vec![],
+            damage_profile: DamageProfile::default(),
+            has_resonance: false,
+            mana: 0,
+            max_mana: 0,
+            spellbooks: vec![],
+            known_spell_ids: HashSet::new(),
         }
     }
 }

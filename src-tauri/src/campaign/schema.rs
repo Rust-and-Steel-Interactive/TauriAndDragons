@@ -13,6 +13,7 @@ pub struct CampaignData {
     pub enemies: EnemyRegistry,
     pub lore: LoreTemplate,
     pub map: GameMap,
+    pub spells: SpellRegistry,
     /// Master seed for deterministic campaign generation
     pub campaign_seed: i32,
     /// Derived seeds for each level of the hierarchy
@@ -149,6 +150,18 @@ pub struct BaseItem {
     /// None on everything else.
     #[serde(default)]
     pub ammo_type: Option<String>,
+    /// Magical discipline this spellbook covers (e.g. "Fire", "Force"). Only
+    /// meaningful when item_class == "SPELLBOOK".
+    #[serde(default)]
+    pub discipline: Option<String>,
+    /// Spell ids this spellbook grants when learned. Only meaningful when
+    /// item_class == "SPELLBOOK".
+    #[serde(default)]
+    pub known_spell_ids: Vec<String>,
+    /// The single spell id this scroll teaches when read. Only meaningful when
+    /// item_class == "SPELL_SCROLL".
+    #[serde(default)]
+    pub scroll_spell_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -276,6 +289,38 @@ pub struct LootDrop {
 }
 
 // ==========================================
+// 6b. spells.json (optional, loaded with fallback in Step 30)
+// ==========================================
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpellRegistry {
+    pub base_spells: HashMap<String, BaseSpell>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaseSpell {
+    pub name: String,
+    pub school: String,
+    pub tier: i32,
+    pub mana_cost: i32,
+    #[serde(default)]
+    pub damage_dice: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_damage_type_loose")]
+    pub damage_type: Option<DamageType>,
+    #[serde(default)]
+    pub heal_dice: Option<String>,
+    #[serde(default)]
+    pub range: Option<WeaponRange>,
+    #[serde(default)]
+    pub area_of_effect: Option<AoEShape>,
+    #[serde(default)]
+    pub allowed_weapons: Vec<String>,
+    #[serde(default)]
+    pub status_effects: Vec<String>,
+    #[serde(default)]
+    pub ai_description: Option<String>,
+}
+
+// ==========================================
 // 6. maps/level_1.json
 // ==========================================
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -364,6 +409,18 @@ pub enum SpawnTemplate {
     },
 }
 
+/// Area-of-effect shape for a spell. Only Circle and Line are supported in
+/// this pass; Cone is intentionally not implemented yet.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "shape", rename_all = "SCREAMING_SNAKE_CASE")]
+#[allow(dead_code)]
+pub enum AoEShape {
+    /// Radius in tiles.
+    Circle { radius: i32 },
+    /// Length in tiles, extending outward from the caster in a straight line.
+    Line { length: i32 },
+}
+
 fn deserialize_optional_damage_type_loose<'de, D>(deserializer: D) -> Result<Option<DamageType>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -404,6 +461,20 @@ mod tests {
     }
 
     #[test]
+    fn test_aoe_shape_circle_roundtrip() {
+        let json = r#"{"shape":"CIRCLE","radius":10}"#;
+        let shape: AoEShape = serde_json::from_str(json).unwrap();
+        assert_eq!(shape, AoEShape::Circle { radius: 10 });
+    }
+
+    #[test]
+    fn test_aoe_shape_line_roundtrip() {
+        let json = r#"{"shape":"LINE","length":30}"#;
+        let shape: AoEShape = serde_json::from_str(json).unwrap();
+        assert_eq!(shape, AoEShape::Line { length: 30 });
+    }
+
+    #[test]
     fn test_base_item_missing_damage_type_defaults_to_none() {
         let json = r#"{"name":"Test Weapon","item_class":"MELEE","base_damage_dice":"1d6","base_value":10}"#;
         let item: BaseItem = serde_json::from_str(json).unwrap();
@@ -434,5 +505,27 @@ mod tests {
         let json = r#"{"name":"Test Sword","item_class":"MELEE","base_value":10,"weight":2.0}"#;
         let item: BaseItem = serde_json::from_str(json).unwrap();
         assert_eq!(item.weapon_range, None);
+    }
+
+    #[test]
+    fn test_base_spell_damage_spell_parses() {
+        let json = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("campaigns/debug_campaign/spells.json")
+        ).unwrap();
+        let registry: SpellRegistry = serde_json::from_str(&json).unwrap();
+        let fire_bolt = registry.base_spells.get("fire_bolt").unwrap();
+        assert_eq!(fire_bolt.damage_type, Some(DamageType::Fire));
+        assert_eq!(fire_bolt.range.as_ref().unwrap().normal, 6);
+        assert!(fire_bolt.area_of_effect.is_none());
+    }
+
+    #[test]
+    fn test_base_spell_aoe_spell_parses() {
+        let json = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("campaigns/debug_campaign/spells.json")
+        ).unwrap();
+        let registry: SpellRegistry = serde_json::from_str(&json).unwrap();
+        let fireball = registry.base_spells.get("fireball").unwrap();
+        assert_eq!(fireball.area_of_effect, Some(AoEShape::Circle { radius: 3 }));
     }
 }

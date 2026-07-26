@@ -1,0 +1,40 @@
+{
+  "base_spells": {
+    "fire_bolt": {
+      "name": "Fire Bolt",
+      "school": "Evocation",
+      "tier": 1,
+      "mana_cost": 5,
+      "damage_dice": "2d10",
+      "damage_type": "fire",
+      "range": { "normal": 6, "long": null },
+      "allowed_weapons": ["staff", "wand"],
+      "status_effects": [],
+      "ai_description": "A searing mote of fire hurled at a single target."
+    },
+    "heal_wounds": {
+      "name": "Heal Wounds",
+      "school": "Abjuration",
+      "tier": 1,
+      "mana_cost": 8,
+      "heal_dice": "3d4+2",
+      "range": { "normal": 6, "long": null },
+      "allowed_weapons": ["staff", "wand"],
+      "status_effects": [],
+      "ai_description": "A warm restorative light closes wounds."
+    },
+    "fireball": {
+      "name": "Fireball",
+      "school": "Evocation",
+      "tier": 3,
+      "mana_cost": 20,
+      "damage_dice": "6d6",
+      "damage_type": "fire",
+      "range": { "normal": 10, "long": null },
+      "area_of_effect": { "shape": "CIRCLE", "radius": 3 },
+      "allowed_weapons": ["staff"],
+      "status_effects": [],
+      "ai_description": "A roaring orb of flame that erupts on impact, engulfing everything nearby."
+    }
+  }
+}

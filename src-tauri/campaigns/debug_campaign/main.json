@@ -19,9 +19,7 @@
       { "id": "shortsword", "quantity": 1 },
       { "id": "leather_armor", "quantity": 1 },
       { "id": "thieves_tools", "quantity": 1 },
-      { "id": "torch", "quantity": 2 },
-      { "id": "shortbow", "quantity": 1 },
-      { "id": "arrow", "quantity": 10 }
+      { "id": "torch", "quantity": 2 }
     ],
     "starting_equipped_weapon": "shortsword",
     "starting_thieves_tools": true

@@ -136,18 +136,16 @@
     "arrow": {
       "name": "Arrow",
       "item_class": "AMMO",
-      "weight": 0.05,
+      "weight": 0.1,
       "base_value": 1,
-      "ammo_type": "arrow",
-      "damage_type": "piercing"
+      "ammo_type": "arrow"
     },
     "crossbow_bolt": {
       "name": "Crossbow Bolt",
       "item_class": "AMMO",
-      "weight": 0.1,
-      "base_value": 2,
-      "ammo_type": "bolt",
-      "damage_type": "piercing"
+      "weight": 0.15,
+      "base_value": 1,
+      "ammo_type": "bolt"
     },
     "shortbow": {
       "name": "Shortbow",
@@ -169,7 +167,7 @@
       "handedness": "TWO_HANDED",
       "damage_type": "piercing",
       "ammo_type": "bolt",
-      "weapon_range": { "normal": 12, "long": 48 }
+      "weapon_range": { "normal": 16, "long": 64 }
     }
   }
 }

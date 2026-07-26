@@ -1,4 +1,5 @@
 use crate::campaign::schema::*;
+use std::collections::HashMap;
 use std::path::Path;
 
 pub fn load_campaign(campaign_dir: &Path) -> anyhow::Result<CampaignData> {
@@ -23,12 +24,29 @@ pub fn load_campaign(campaign_dir: &Path) -> anyhow::Result<CampaignData> {
     let enemies_str = std::fs::read_to_string(&enemies_path)?;
     let enemies: EnemyRegistry = serde_json::from_str(&enemies_str)?;
 
+    let spells_path = campaign_dir.join("spells.json");
+    let spells: SpellRegistry = match std::fs::read_to_string(&spells_path) {
+        Ok(spells_str) => match serde_json::from_str(&spells_str) {
+            Ok(parsed) => parsed,
+            Err(e) => {
+                eprintln!("WARN: campaign '{}' has an invalid spells.json ({}), continuing with no spells", campaign_dir.display(), e);
+                SpellRegistry { base_spells: HashMap::new() }
+            }
+        },
+        Err(_) => {
+            eprintln!("WARN: campaign '{}' has no spells.json, continuing with no spells", campaign_dir.display());
+            SpellRegistry { base_spells: HashMap::new() }
+        }
+    };
+
     let map_path = campaign_dir.join("maps").join(format!("{}.json", main.starting_map));
     let map_str = std::fs::read_to_string(&map_path)?;
     let map: GameMap = serde_json::from_str(&map_str)?;
 
     let master_seed = main.campaign_seed;
     let (world_seed, region_seed, dungeon_seed, _) = crate::campaign::schema::derive_seed_hierarchy(master_seed);
+
+    validate_spell_weapon_references(&spells, &items, campaign_dir);
 
     Ok(CampaignData {
         main,
@@ -37,11 +55,25 @@ pub fn load_campaign(campaign_dir: &Path) -> anyhow::Result<CampaignData> {
         lore,
         enemies,
         map,
+        spells,
         campaign_seed: master_seed,
         world_seed,
         region_seed,
         dungeon_seed,
     })
+}
+
+fn validate_spell_weapon_references(spells: &SpellRegistry, items: &ItemRegistry, campaign_dir: &Path) {
+    for (spell_id, spell) in &spells.base_spells {
+        for weapon_id in &spell.allowed_weapons {
+            if !items.base_items.contains_key(weapon_id) {
+                eprintln!(
+                    "WARN: campaign '{}' spell '{}' references unknown allowed_weapon '{}' (not found in items.json)",
+                    campaign_dir.display(), spell_id, weapon_id
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -104,5 +136,23 @@ mod tests {
             }
             _ => panic!("Expected Trap spawn"),
         }
+    }
+
+    #[test]
+    fn test_load_campaign_without_spells_json_gets_empty_registry() {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        // d3_debug_campaign has no spells.json — confirm this doesn't break loading.
+        let campaign_dir = manifest_dir.join("campaigns").join("d3_debug_campaign");
+        let data = load_campaign(&campaign_dir).expect("campaign without spells.json should still load");
+        assert!(data.spells.base_spells.is_empty());
+    }
+
+    #[test]
+    fn test_load_debug_campaign_spells_json_populates_registry() {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let campaign_dir = manifest_dir.join("campaigns").join("debug_campaign");
+        let data = load_campaign(&campaign_dir).expect("debug_campaign should load");
+        assert!(data.spells.base_spells.contains_key("fire_bolt"));
+        assert!(data.spells.base_spells.contains_key("fireball"));
     }
 }

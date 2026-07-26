@@ -105,13 +105,13 @@
             "1": { "name": "Crude", "value_mult": 0.5 },
             "2": { "name": "Standard", "value_mult": 1.0 },
             "3": { "name": "Fine", "value_mult": 2.0 },
-            "4": { "name": "Masterwork", "value_mult": 5.0 }
+            "4": { "name": "Masterwork", "value_mult": 4.0 }
         },
         "material": {
             "1": { "name": "Wood", "value_mult": 1.0 },
             "2": { "name": "Iron-Tipped", "value_mult": 1.5 },
-            "3": { "name": "Steel-Tipped", "value_mult": 3.0 },
-            "4": { "name": "Silvered", "value_mult": 8.0 }
+            "3": { "name": "Steel-Tipped", "value_mult": 2.5 },
+            "4": { "name": "Silver-Tipped", "value_mult": 4.0 }
         }
     }
 }

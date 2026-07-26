@@ -386,6 +386,9 @@ pub fn generate_item_instance(
                 damage_type: base_item.damage_type,
                 weapon_range: base_item.weapon_range.clone(),
                 ammo_type: base_item.ammo_type.clone(),
+                discipline: base_item.discipline.clone(),
+                known_spell_ids: base_item.known_spell_ids.clone(),
+                scroll_spell_id: base_item.scroll_spell_id.clone(),
             });
         } else {
             let display_name = generate_tool_name(tier_val, &base_item.name);
@@ -429,6 +432,9 @@ pub fn generate_item_instance(
                 damage_type: base_item.damage_type,
                 weapon_range: base_item.weapon_range.clone(),
                 ammo_type: base_item.ammo_type.clone(),
+                discipline: base_item.discipline.clone(),
+                known_spell_ids: base_item.known_spell_ids.clone(),
+                scroll_spell_id: base_item.scroll_spell_id.clone(),
             });
         }
     }
@@ -507,6 +513,9 @@ pub fn generate_item_instance(
         damage_type: base_item.damage_type,
         weapon_range: base_item.weapon_range.clone(),
         ammo_type: base_item.ammo_type.clone(),
+        discipline: base_item.discipline.clone(),
+        known_spell_ids: base_item.known_spell_ids.clone(),
+        scroll_spell_id: base_item.scroll_spell_id.clone(),
     })
 }
 

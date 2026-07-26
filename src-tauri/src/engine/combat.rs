@@ -1,78 +1,78 @@
 use rand::Rng;
-use crate::engine::state::{DamageType, DamageProfile, WeaponRange};
+use crate::engine::state::{DamageType, DamageProfile, WeaponRange, Tile, has_line_of_sight, chebyshev_distance, Player};
+use crate::campaign::schema::BaseSpell;
 
-/// Everything resolve_attack_roll needs to decide if an attack is even legal,
-/// and if so, whether it hits — deliberately decoupled from `Player`/`Enemy`/
-/// `SessionState` so this module stays free of engine-state dependencies,
-/// matching the existing style of `apply_resistance`/`classify_range`.
-#[derive(Debug, Clone)]
-pub struct AttackContext {
-    pub distance: i32,
-    pub weapon_range: WeaponRange,
-    pub has_line_of_sight: bool,
-    /// True for RANGED/MAGIC weapons — gates both the long-range penalty's
-    /// sibling adjacency penalty and (for the ammo path specifically) is left
-    /// to the caller to check separately, since ammo requires inventory access
-    /// this module intentionally doesn't have.
-    pub is_ranged_style: bool,
-    pub hostile_adjacent_to_attacker: bool,
-    pub attack_stat_mod: i32,
-    pub proficiency_bonus: i32,
-    pub target_ac: i32,
-    pub target_dodging: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AttackOutcome {
+/// Why an attack could not proceed to the dice roll at all.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AttackBlockReason {
     OutOfRange,
     NoLineOfSight,
-    Hit { atk_bonus: i32, atk_roll: i32, atk_total: i32, is_crit: bool },
-    Miss { atk_bonus: i32, atk_roll: i32, atk_total: i32 },
+    OutOfAmmo(String),
 }
 
-/// Roll a d20 attack against `ctx`, applying range/LOS gating and both the
-/// long-range and ranged-while-adjacent penalties before comparing to AC.
-/// Ammo is NOT checked here — callers must gate on ammo availability
-/// themselves before calling this, exactly as Step 21 already does, since
-/// this module has no access to inventory state.
-pub fn resolve_attack_roll(ctx: &AttackContext) -> AttackOutcome {
-    let range_band = classify_range(ctx.distance, &ctx.weapon_range);
+/// The result of a fully-resolved attack roll (range/LOS/ammo all passed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AttackRollResult {
+    pub roll: i32,
+    pub bonus: i32,
+    pub total: i32,
+    pub is_crit: bool,
+}
+
+/// Everything needed to attempt an attack roll, gathered up-front by the caller
+/// so this function stays pure (no access to SessionState/Player/Enemy directly).
+pub struct AttackRollInputs<'a> {
+    pub attacker_pos: (i32, i32),
+    pub target_pos: (i32, i32),
+    pub tiles: &'a [Vec<Tile>],
+    pub weapon_range: WeaponRange,
+    pub base_atk_bonus: i32,
+    pub apply_adjacent_enemy_penalty: bool,
+    pub enemy_adjacent_to_attacker: bool,
+    pub required_ammo_type: Option<String>,
+    pub has_required_ammo: bool,
+}
+
+pub fn resolve_attack_roll(inputs: AttackRollInputs) -> Result<AttackRollResult, AttackBlockReason> {
+    let dist = chebyshev_distance(inputs.attacker_pos.0, inputs.attacker_pos.1, inputs.target_pos.0, inputs.target_pos.1);
+    let range_band = classify_range(dist, &inputs.weapon_range);
+
     if range_band == RangeBand::OutOfRange {
-        return AttackOutcome::OutOfRange;
+        return Err(AttackBlockReason::OutOfRange);
     }
-    if ctx.is_ranged_style && !ctx.has_line_of_sight {
-        return AttackOutcome::NoLineOfSight;
+
+    if let Some(ref ammo_type) = inputs.required_ammo_type {
+        if !inputs.has_required_ammo {
+            return Err(AttackBlockReason::OutOfAmmo(ammo_type.clone()));
+        }
+    }
+
+    if !has_line_of_sight(inputs.tiles, inputs.attacker_pos.0, inputs.attacker_pos.1, inputs.target_pos.0, inputs.target_pos.1) {
+        return Err(AttackBlockReason::NoLineOfSight);
     }
 
     let mut rng = rand::thread_rng();
-    let atk_roll = rng.gen_range(1..=20);
-    let is_crit = atk_roll == 20;
+    let roll = rng.gen_range(1..=20);
+    let is_crit = roll == 20;
 
-    let mut atk_bonus = ctx.attack_stat_mod + ctx.proficiency_bonus;
+    let mut bonus = inputs.base_atk_bonus;
     if range_band == RangeBand::LongRange {
-        atk_bonus -= 5;
+        bonus -= 5;
     }
-    if ctx.is_ranged_style && ctx.hostile_adjacent_to_attacker {
-        atk_bonus -= 5;
+    if inputs.apply_adjacent_enemy_penalty && inputs.enemy_adjacent_to_attacker {
+        bonus -= 5;
     }
 
-    let effective_ac = if ctx.target_dodging { ctx.target_ac + 5 } else { ctx.target_ac };
-    let atk_total = atk_roll + atk_bonus;
-
-    if is_crit || atk_total >= effective_ac {
-        AttackOutcome::Hit { atk_bonus, atk_roll, atk_total, is_crit }
-    } else {
-        AttackOutcome::Miss { atk_bonus, atk_roll, atk_total }
-    }
+    Ok(AttackRollResult { roll, bonus, total: roll + bonus, is_crit })
 }
 
-/// Roll weapon damage dice + stat/flat bonuses, doubling dice on a crit.
-/// Resistance is NOT applied here — callers should pass the result to
-/// `apply_damage` (which calls `apply_resistance` internally), matching
-/// Step 10's single-source-of-truth design.
-pub fn resolve_damage_roll(dice_total: i32, stat_bonus: i32, flat_bonus: i32, is_crit: bool) -> i32 {
-    let base = if is_crit { dice_total * 2 } else { dice_total };
-    base + stat_bonus + flat_bonus
+/// Rolls weapon damage dice, doubles on crit, adds the flat bonus, then applies
+/// the target's resistance/vulnerability/immunity profile.
+pub fn resolve_damage_roll(dmg_dice: &str, dmg_bonus: i32, is_crit: bool, damage_type: DamageType, target_profile: &DamageProfile) -> i32 {
+    let raw = crate::engine::validator::roll_dice_expr(dmg_dice);
+    let dice_roll = if is_crit { raw.0 * 2 } else { raw.0 };
+    let total = dice_roll + raw.1 + dmg_bonus;
+    apply_resistance(total, damage_type, target_profile)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,6 +114,41 @@ pub fn classify_range(dist: i32, range: &WeaponRange) -> RangeBand {
 /// - Resistant only: half damage, rounded down.
 /// - Vulnerable only: double damage.
 /// - Neither: unchanged.
+/// Why a spell could not be cast.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CastBlockReason {
+    NoResonance,
+    SpellNotKnown,
+    InsufficientMana,
+    WrongWeapon,
+}
+
+/// The single gate through which all spellcasting eligibility flows.
+/// Does NOT deduct mana, resolve damage/healing, or advance any turn state.
+pub fn can_cast_spell(player: &Player, spell_id: &str, spell: &BaseSpell) -> Result<(), CastBlockReason> {
+    if !player.has_resonance {
+        return Err(CastBlockReason::NoResonance);
+    }
+    if !player.known_spell_ids.contains(spell_id) {
+        return Err(CastBlockReason::SpellNotKnown);
+    }
+    if player.mana < spell.mana_cost {
+        return Err(CastBlockReason::InsufficientMana);
+    }
+    if !spell.allowed_weapons.is_empty() {
+        let equipped_template_id = player.primary_hand.as_deref()
+            .and_then(|id| player.inventory.iter().find(|i| i.instance_id == id))
+            .map(|i| i.template_id.as_str());
+        let weapon_allowed = equipped_template_id
+            .map(|tid| spell.allowed_weapons.iter().any(|w| w == tid))
+            .unwrap_or(false);
+        if !weapon_allowed {
+            return Err(CastBlockReason::WrongWeapon);
+        }
+    }
+    Ok(())
+}
+
 pub fn apply_resistance(dmg: i32, dtype: DamageType, profile: &DamageProfile) -> i32 {
     if profile.immunities.contains(&dtype) {
         return 0;
@@ -133,6 +168,8 @@ pub fn apply_resistance(dmg: i32, dtype: DamageType, profile: &DamageProfile) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::state::ItemInstance;
+    use std::collections::HashSet;
 
     fn profile_with(resistances: &[DamageType], vulnerabilities: &[DamageType], immunities: &[DamageType]) -> DamageProfile {
         DamageProfile {
@@ -197,5 +234,199 @@ mod tests {
         let range = WeaponRange { normal: 1, long: None };
         assert_eq!(classify_range(1, &range), RangeBand::InRange);
         assert_eq!(classify_range(2, &range), RangeBand::OutOfRange);
+    }
+
+    // ── Scenario tests for resolve_attack_roll / resolve_damage_roll ──
+
+    fn floor_tiles(width: i32, height: i32) -> Vec<Vec<Tile>> {
+        (0..height).map(|y| {
+            (0..width).map(|x| Tile {
+                x, y,
+                tile_type: crate::engine::state::TileType::Floor,
+                visibility: crate::engine::state::TileVisibility::Visible,
+                ground_light_source: None,
+            }).collect()
+        }).collect()
+    }
+
+    #[test]
+    fn test_scenario_in_range_hit() {
+        let tiles = floor_tiles(5, 5);
+        let inputs = AttackRollInputs {
+            attacker_pos: (0, 0),
+            target_pos: (1, 0),
+            tiles: &tiles,
+            weapon_range: WeaponRange { normal: 1, long: None },
+            base_atk_bonus: 5,
+            apply_adjacent_enemy_penalty: false,
+            enemy_adjacent_to_attacker: false,
+            required_ammo_type: None,
+            has_required_ammo: true,
+        };
+        let result = resolve_attack_roll(inputs).expect("should resolve, target is in range");
+        assert_eq!(result.bonus, 5, "no penalties should apply at normal range");
+    }
+
+    #[test]
+    fn test_scenario_long_range_penalty() {
+        let tiles = floor_tiles(20, 20);
+        let inputs = AttackRollInputs {
+            attacker_pos: (0, 0),
+            target_pos: (10, 0),
+            tiles: &tiles,
+            weapon_range: WeaponRange { normal: 6, long: Some(20) },
+            base_atk_bonus: 5,
+            apply_adjacent_enemy_penalty: false,
+            enemy_adjacent_to_attacker: false,
+            required_ammo_type: None,
+            has_required_ammo: true,
+        };
+        let result = resolve_attack_roll(inputs).expect("distance 10 is within long range (6..20)");
+        assert_eq!(result.bonus, 0, "long-range penalty of -5 should reduce bonus from 5 to 0");
+    }
+
+    #[test]
+    fn test_scenario_out_of_range_block() {
+        let tiles = floor_tiles(20, 20);
+        let inputs = AttackRollInputs {
+            attacker_pos: (0, 0),
+            target_pos: (10, 0),
+            tiles: &tiles,
+            weapon_range: WeaponRange { normal: 1, long: None },
+            base_atk_bonus: 5,
+            apply_adjacent_enemy_penalty: false,
+            enemy_adjacent_to_attacker: false,
+            required_ammo_type: None,
+            has_required_ammo: true,
+        };
+        let result = resolve_attack_roll(inputs);
+        assert_eq!(result, Err(AttackBlockReason::OutOfRange));
+    }
+
+    #[test]
+    fn test_scenario_no_ammo_block() {
+        let tiles = floor_tiles(5, 5);
+        let inputs = AttackRollInputs {
+            attacker_pos: (0, 0),
+            target_pos: (1, 0),
+            tiles: &tiles,
+            weapon_range: WeaponRange { normal: 16, long: Some(64) },
+            base_atk_bonus: 5,
+            apply_adjacent_enemy_penalty: false,
+            enemy_adjacent_to_attacker: false,
+            required_ammo_type: Some("arrow".to_string()),
+            has_required_ammo: false,
+        };
+        let result = resolve_attack_roll(inputs);
+        assert_eq!(result, Err(AttackBlockReason::OutOfAmmo("arrow".to_string())));
+    }
+
+    #[test]
+    fn test_scenario_adjacent_hostile_penalty() {
+        let tiles = floor_tiles(5, 5);
+        let inputs = AttackRollInputs {
+            attacker_pos: (0, 0),
+            target_pos: (3, 0),
+            tiles: &tiles,
+            weapon_range: WeaponRange { normal: 16, long: Some(64) },
+            base_atk_bonus: 5,
+            apply_adjacent_enemy_penalty: true,
+            enemy_adjacent_to_attacker: true,
+            required_ammo_type: None,
+            has_required_ammo: true,
+        };
+        let result = resolve_attack_roll(inputs).expect("in range, should resolve");
+        assert_eq!(result.bonus, 0, "adjacent-hostile penalty of -5 should reduce bonus from 5 to 0, independent of range band");
+    }
+
+    #[test]
+    fn test_scenario_resist_vuln_immune_damage() {
+        let resistant = DamageProfile { resistances: vec![DamageType::Bludgeoning], ..Default::default() };
+        let vulnerable = DamageProfile { vulnerabilities: vec![DamageType::Fire], ..Default::default() };
+        let immune = DamageProfile { immunities: vec![DamageType::Poison], ..Default::default() };
+        let neutral = DamageProfile::default();
+
+        let base = resolve_damage_roll("1d1+10", 0, false, DamageType::Bludgeoning, &neutral);
+        let resisted = resolve_damage_roll("1d1+10", 0, false, DamageType::Bludgeoning, &resistant);
+        let vuln = resolve_damage_roll("1d1+10", 0, false, DamageType::Fire, &vulnerable);
+        let immune_result = resolve_damage_roll("1d1+10", 0, false, DamageType::Poison, &immune);
+
+        assert_eq!(base, 11);
+        assert_eq!(resisted, 5);
+        assert_eq!(vuln, 22);
+        assert_eq!(immune_result, 0);
+    }
+
+    fn test_spell(mana_cost: i32, allowed_weapons: &[&str]) -> BaseSpell {
+        BaseSpell {
+            name: "Test Bolt".to_string(),
+            school: "Evocation".to_string(),
+            tier: 1,
+            mana_cost,
+            damage_dice: Some("2d6".to_string()),
+            damage_type: Some(DamageType::Fire),
+            heal_dice: None,
+            range: None,
+            area_of_effect: None,
+            allowed_weapons: allowed_weapons.iter().map(|s| s.to_string()).collect(),
+            status_effects: vec![],
+            ai_description: None,
+        }
+    }
+
+    #[test]
+    fn test_can_cast_spell_blocks_no_resonance() {
+        let player = Player { has_resonance: false, mana: 100, known_spell_ids: HashSet::from(["bolt".to_string()]), ..Player::default_for_test() };
+        let spell = test_spell(5, &[]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Err(CastBlockReason::NoResonance));
+    }
+
+    #[test]
+    fn test_can_cast_spell_blocks_unknown_spell() {
+        let player = Player { has_resonance: true, mana: 100, known_spell_ids: HashSet::new(), ..Player::default_for_test() };
+        let spell = test_spell(5, &[]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Err(CastBlockReason::SpellNotKnown));
+    }
+
+    #[test]
+    fn test_can_cast_spell_blocks_insufficient_mana() {
+        let player = Player { has_resonance: true, mana: 2, known_spell_ids: HashSet::from(["bolt".to_string()]), ..Player::default_for_test() };
+        let spell = test_spell(5, &[]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Err(CastBlockReason::InsufficientMana));
+    }
+
+    #[test]
+    fn test_can_cast_spell_blocks_wrong_weapon() {
+        let sword = ItemInstance { instance_id: "w1".to_string(), template_id: "shortsword".to_string(), item_class: "MELEE".to_string(), ..ItemInstance::default_for_test() };
+        let player = Player {
+            has_resonance: true, mana: 100,
+            known_spell_ids: HashSet::from(["bolt".to_string()]),
+            primary_hand: Some("w1".to_string()),
+            inventory: vec![sword],
+            ..Player::default_for_test()
+        };
+        let spell = test_spell(5, &["staff", "wand"]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Err(CastBlockReason::WrongWeapon));
+    }
+
+    #[test]
+    fn test_can_cast_spell_succeeds_with_matching_weapon() {
+        let staff = ItemInstance { instance_id: "w1".to_string(), template_id: "staff".to_string(), item_class: "MAGIC".to_string(), ..ItemInstance::default_for_test() };
+        let player = Player {
+            has_resonance: true, mana: 100,
+            known_spell_ids: HashSet::from(["bolt".to_string()]),
+            primary_hand: Some("w1".to_string()),
+            inventory: vec![staff],
+            ..Player::default_for_test()
+        };
+        let spell = test_spell(5, &["staff", "wand"]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Ok(()));
+    }
+
+    #[test]
+    fn test_can_cast_spell_succeeds_when_no_weapon_restriction() {
+        let player = Player { has_resonance: true, mana: 100, known_spell_ids: HashSet::from(["bolt".to_string()]), ..Player::default_for_test() };
+        let spell = test_spell(5, &[]);
+        assert_eq!(can_cast_spell(&player, "bolt", &spell), Ok(()));
     }
 }
