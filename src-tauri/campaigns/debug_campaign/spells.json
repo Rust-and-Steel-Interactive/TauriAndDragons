@@ -35,6 +35,18 @@
       "allowed_weapons": ["staff"],
       "status_effects": [],
       "ai_description": "A roaring orb of flame that erupts on impact, engulfing everything nearby."
+    },
+    "force_bolt": {
+      "name": "Force Bolt",
+      "school": "Force",
+      "tier": 1,
+      "mana_cost": 5,
+      "damage_dice": "2d6",
+      "damage_type": "force",
+      "range": { "normal": 6, "long": null },
+      "allowed_weapons": ["staff", "wand"],
+      "status_effects": [],
+      "ai_description": "A crackling bolt of pure kinetic force."
     }
   }
 }

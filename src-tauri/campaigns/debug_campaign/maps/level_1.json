@@ -110,6 +110,12 @@
           "results": {
             "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "debug_zombie", "scale": 1.0 }]
           }
+        },
+        "iron_construct": {
+          "roll": "1d1",
+          "results": {
+            "1": [{ "type": "SPAWN_ENEMY", "enemy_id": "iron_construct", "scale": 1.0 }]
+          }
         }
       }
     }

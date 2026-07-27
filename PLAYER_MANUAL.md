@@ -36,6 +36,9 @@
 28. [Known Limitations](#28-known-limitations)
 29. [Glossary](#29-glossary)
 30. [Appendices](#30-appendices)
+31. [Damage Types & Resistances](#31-damage-types--resistances)
+32. [Ranged Combat & Ammunition](#32-ranged-combat--ammunition)
+33. [Magic](#33-magic)
 
 ---
 
@@ -247,6 +250,8 @@ Each turn, a combatant can take:
 | `ACTION_STUDY_<enemy_id>` | Intelligence check (DC 10) to learn enemy abilities | Action |
 | `ACTION_FLEE` | Attempt to escape combat (DEX check DC 10); triggers opportunity attacks if not disengaging | Action |
 | `BONUS_OFFHAND_ATTACK_<enemy_id>` | Attack with an off-hand light weapon | Bonus Action |
+| `ACTION_CAST_<spell>_<enemy_id>` | Action available, spell known/affordable, enemy in range+LOS | Single-target spell attack roll and damage/resistance resolution |
+| `ACTION_CAST_<spell>_AOE_<x>_<y>` | Action available, spell known/affordable, spell has an area effect | Area-of-effect damage with a per-enemy saving throw |
 | `USE_ITEM_<item_id>` | Use a consumable item (e.g., health potion) | Action (Combat) |
 
 ### Attack Resolution
@@ -320,6 +325,8 @@ After combat, loot from defeated enemies is added to `last_loot` and narrated wi
 | `EQUIP_ITEM_<instance_id>` | Weapon-class items not equipped | Sets as equipped weapon |
 | `EQUIP_ARMOUR_<instance_id>` | ARMOR items not already worn | Moves to equipped armour slot |
 | `UNEQUIP_ARMOUR_<instance_id>` | Equipped armour items | Returns armour to inventory |
+| `LEARN_SPELLBOOK_<instance_id>` | SPELLBOOK item in inventory | Learns its spells; item is not consumed |
+| `READ_SCROLL_<instance_id>` | SPELL_SCROLL item in inventory | Learns its one spell; item is consumed |
 
 ---
 
@@ -1181,11 +1188,13 @@ A plain stone chamber with four doorways (North, East, South, West). No enemies,
 | Term | Definition |
 |---|---|
 | **AC** | Armour Class — the target number to hit a character in combat |
+| **AoE** | Area of Effect — a spell effect that strikes multiple targets in a shape (circle, line) rather than a single target |
 | **Action** | A major activity in combat (attack, cast spell, dash, etc.) |
 | **Bonus Action** | A minor activity in combat (off-hand attack, certain spells) |
 | **BFS** | Breadth-First Search — algorithm used for room graph layout |
 | **Canvas** | HTML5 Canvas API used for minimap rendering |
 | **Combat Log** | Scrollable history of combat events and dice rolls |
+| **Damage Type** | The category of damage a source deals (e.g. Fire, Slashing) — determines whether a target resists, is vulnerable to, or is immune to it |
 | **DC** | Difficulty Class — target number for skill checks |
 | **DEX** | Dexterity — ability score affecting AC, initiative, lockpicking |
 | **DM** | Dungeon Master — role played by the Gemma LLM |
@@ -1194,16 +1203,21 @@ A plain stone chamber with four doorways (North, East, South, West). No enemies,
 | **Gemma** | Google's open-source LLM used as the game's Dungeon Master |
 | **GP** | Gold Pieces — currency used for buying/selling |
 | **HP** | Hit Points — health value; reaching 0 causes death |
+| **Innate Spell** | A spell granted by simply equipping a specific magic item, bypassing Resonance/known-spells/mana requirements |
 | **INT** | Intelligence — ability score used for study actions and magic |
 | **Initiative** | Turn order in combat, determined by a DEX check |
 | **Instance ID** | Unique identifier for a specific item instance |
 | **LLM** | Large Language Model — the AI that narrates the game |
 | **LOS** | Line of Sight — check for unobstructed visibility |
+| **Mana** | The resource pool spent to cast spells; regenerates over time and fully restores on room entry |
 | **Minimap** | Tactical grid view of the current room |
 | **OA** | Opportunity Attack — attack triggered by leaving an adjacent tile without disengaging |
 | **Procedural** | Algorithmically generated content (items, rooms, loot placement) |
 | **Reaction** | A response to a trigger (opportunity attacks) |
+| **Resonance** | The magical aptitude required to cast learned spells (innate item spells are exempt) |
 | **Room Graph** | BFS-layered map showing all visited rooms and connections |
+| **Spellbook** | An item that teaches one or more spells of a given discipline when studied; not consumed |
+| **Spell Scroll** | A single-use item that teaches exactly one spell when read |
 | **STR** | Strength — ability score for melee attacks |
 | **Template ID** | Base item type identifier shared by all items of the same base type |
 | **Variant ID** | Identifier encoding the exact modifier combination for stacking |
@@ -1367,6 +1381,107 @@ The game uses standard D&D dice notation:
 | `2d4+2` | Roll 2 four-sided dice, add 2 |
 | `1d20+3` | Roll 1 twenty-sided die, add 3 |
 | `d100` | Roll 1 hundred-sided die (percentile) |
+
+---
+
+## 31. Damage Types & Resistances
+
+### The 13 Damage Types
+
+Every source of damage — weapon attacks, spells, and traps — carries a damage type: **Bludgeoning, Piercing, Slashing, Acid, Cold, Fire, Force, Lightning, Necrotic, Poison, Psychic, Radiant, Thunder**.
+
+### Resistance, Vulnerability, and Immunity
+
+Some enemies have a **damage profile** listing damage types they resist, are vulnerable to, or are immune to:
+
+| Relationship | Effect |
+|---|---|
+| **Immune** | Takes 0 damage of that type, regardless of any other factor |
+| **Resistant** | Takes half damage (rounded down) |
+| **Vulnerable** | Takes double damage |
+| **Resistant AND Vulnerable** (same type) | Effects cancel — full damage |
+| **Neither** | Full damage, unchanged |
+
+The player currently has no damage profile of their own — only enemies can resist, be vulnerable to, or be immune to specific damage types.
+
+### Where Damage Type Comes From
+
+- **Weapons**: each weapon's `damage_type` is fixed by its base item (e.g. a sword is Slashing, a mace is Bludgeoning).
+- **Spells**: each spell's `damage_type` is fixed by its definition (e.g. Fire Bolt deals Fire damage).
+- **Traps**: each trap's `damage_type` is fixed by its definition.
+- If a weapon, spell, or trap has no explicit damage type set, it defaults to **Bludgeoning**.
+
+---
+
+## 32. Ranged Combat & Ammunition
+
+### Weapon Range
+
+Every weapon has a range profile: a **normal range** (in tiles) within which attacks suffer no penalty, and — for some ranged weapons — a **long range** beyond that, within which attacks suffer a **-5 penalty** to the attack roll. Beyond long range (or beyond normal range for a weapon with no long range at all, like melee weapons), the target simply cannot be attacked.
+
+| Weapon Category | Typical Range |
+|---|---|
+| Melee | 1 tile, no long range |
+| Reach (polearms, whips) | 2 tiles, no long range |
+| Magic (staves, wands) | 6 tiles, no long range (unless the item overrides this) |
+| Ranged (bows, crossbows) | 16 tiles normal, 64 tiles long |
+
+### The Adjacent-Hostile Penalty
+
+Firing a ranged or magic weapon while any hostile, living enemy stands adjacent to you imposes an additional **-5 penalty**, on top of any long-range penalty — you can't aim as well with something breathing down your neck. This penalty never applies to melee or reach weapons.
+
+### Line of Sight
+
+Ranged and magic attacks additionally require a clear line of sight to the target — an intervening wall blocks the shot entirely, even if the target is within range.
+
+### Ammunition
+
+Some ranged weapons (like a shortbow) require matching ammunition (like arrows) to fire:
+
+- **No matching ammo in inventory**: the attack is blocked, and its action button won't even appear in your action list.
+- **Firing consumes one unit of ammo** per attack, whether it hits or misses.
+- **After combat**, roughly half of the ammo you fired during that fight is recovered and dropped in the room where the fight happened.
+
+Weapons with no `ammo_type` (melee, magic, and some ranged weapons) never require or consume ammunition.
+
+---
+
+## 33. Magic
+
+### Resonance and Mana
+
+Casting spells requires **Resonance** — a magical aptitude some characters have and others don't. A character without Resonance cannot cast spells at all, with one exception (Innate Items, below). Casting also costs **mana**, drawn from a mana pool that regenerates **+1 per turn** in combat and **fully restores** whenever you enter a new room.
+
+### Learning Spells
+
+There are two independent ways to learn a spell:
+
+- **Spellbooks**: reading a spellbook teaches every spell it contains and is not consumed — you can hold onto it. Spellbooks are organized by **discipline** (e.g. Fire, Force); learning a higher-tier spellbook of a discipline you've already studied upgrades your knowledge of that discipline, while spells you already know are never forgotten.
+- **Scrolls**: reading a scroll teaches exactly one spell, and the scroll is consumed (used up) in the process — independent of whether you own any spellbook at all.
+
+### Innate Items
+
+Some magic items (like certain wands) grant a spell **innately** simply by being equipped — no Resonance, no prior knowledge, and no mana cost required to use that specific spell while wielding the item.
+
+### Casting
+
+During combat, available spells appear as action buttons:
+
+| Action ID | Effect |
+|---|---|
+| `ACTION_CAST_<spell>_<enemy_id>` | Cast a single-target spell at a specific visible enemy |
+| `ACTION_CAST_<spell>_AOE_<x>_<y>` | Cast an area-of-effect spell centered on a target tile |
+
+**Single-target spells** work like a weapon attack: `d20 + INT modifier + proficiency bonus` vs. the target's AC, with damage applied (and resisted, per Section 31) on a hit. Mana is spent the moment the spell is released, whether it hits or misses.
+
+**Area-of-effect spells** strike every living enemy on an affected tile (a circle around the target point, or a line extending from the caster). Each enemy caught in the area rolls an independent saving throw (`d20 + their best of DEX/CON modifier` vs. `8 + your INT modifier + proficiency bonus`): a successful save takes half damage, a failed save takes full damage. Mana is spent once for the whole area-effect cast, regardless of how many enemies it strikes.
+
+### Learning & Reading Actions
+
+| Action ID | Effect |
+|---|---|
+| `LEARN_SPELLBOOK_<item_id>` | Study a spellbook in your inventory, learning its spells (spellbook not consumed) |
+| `READ_SCROLL_<item_id>` | Read a scroll, learning its one spell (scroll consumed) |
 
 ---
 

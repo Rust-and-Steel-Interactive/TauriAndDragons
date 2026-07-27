@@ -113,5 +113,47 @@
             "3": { "name": "Steel-Tipped", "value_mult": 2.5 },
             "4": { "name": "Silver-Tipped", "value_mult": 4.0 }
         }
+    },
+    "MAGIC": {
+        "quality": {
+            "1": { "name": "Cracked", "stat_bonus": -1, "value_mult": 0.5 },
+            "2": { "name": "Standard", "stat_bonus": 0, "value_mult": 1.0 },
+            "3": { "name": "Polished", "stat_bonus": 1, "value_mult": 2.0 },
+            "4": { "name": "Flawless", "stat_bonus": 2, "value_mult": 5.0 }
+        },
+        "material": {
+            "1": { "name": "Pine", "value_mult": 1.0 },
+            "2": { "name": "Oak", "value_mult": 1.5 },
+            "3": { "name": "Yew", "value_mult": 3.0 },
+            "4": { "name": "Archwood", "value_mult": 8.0 }
+        }
+    },
+    "SPELLBOOK": {
+        "quality": {
+            "1": { "name": "Worn", "value_mult": 0.5 },
+            "2": { "name": "Standard", "value_mult": 1.0 },
+            "3": { "name": "Well-Kept", "value_mult": 2.0 },
+            "4": { "name": "Pristine", "value_mult": 4.0 }
+        },
+        "material": {
+            "1": { "name": "Parchment", "value_mult": 1.0 },
+            "2": { "name": "Vellum", "value_mult": 2.0 },
+            "3": { "name": "Silk-Bound", "value_mult": 4.0 },
+            "4": { "name": "Gilt-Edged", "value_mult": 8.0 }
+        }
+    },
+    "SPELL_SCROLL": {
+        "quality": {
+            "1": { "name": "Faded", "value_mult": 0.5 },
+            "2": { "name": "Standard", "value_mult": 1.0 },
+            "3": { "name": "Fresh", "value_mult": 2.0 },
+            "4": { "name": "Sealed", "value_mult": 4.0 }
+        },
+        "material": {
+            "1": { "name": "Paper", "value_mult": 1.0 },
+            "2": { "name": "Parchment", "value_mult": 1.5 },
+            "3": { "name": "Vellum", "value_mult": 3.0 },
+            "4": { "name": "Enchanted Silk", "value_mult": 6.0 }
+        }
     }
 }

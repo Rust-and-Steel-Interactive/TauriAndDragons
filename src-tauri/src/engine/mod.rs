@@ -522,6 +522,117 @@ impl GameEngine {
         }
     }
 
+    /// Returns the first known enemy spell that's affordable and whose target
+    /// (the player) is currently in range and LOS — a cheap, non-consuming
+    /// pre-check (no dice rolled) used purely to decide WHETHER to cast, before
+    /// enemy_try_cast_spell actually attempts it.
+    fn find_castable_enemy_spell(&self, enemy: &Enemy) -> Option<(String, crate::campaign::schema::BaseSpell)> {
+        if enemy.known_spell_ids.is_empty() || enemy.mana <= 0 {
+            return None;
+        }
+        let room = self.state.get_current_room()?;
+        let (px, py) = (self.state.player.x, self.state.player.y);
+
+        for spell_id in &enemy.known_spell_ids {
+            let spell = match self.campaign.spells.base_spells.get(spell_id) {
+                Some(s) => s,
+                None => continue,
+            };
+            if spell.damage_dice.is_none() || enemy.mana < spell.mana_cost {
+                continue;
+            }
+            let range = spell.range.clone().unwrap_or(crate::engine::state::WeaponRange { normal: 6, long: None });
+            let dist = state::chebyshev_distance(enemy.x, enemy.y, px, py);
+            if crate::engine::combat::classify_range(dist, &range) == crate::engine::combat::RangeBand::OutOfRange {
+                continue;
+            }
+            if !state::has_line_of_sight(&room.tiles, enemy.x, enemy.y, px, py) {
+                continue;
+            }
+            return Some((spell_id.clone(), spell.clone()));
+        }
+        None
+    }
+
+    fn enemy_try_cast_spell(&mut self, enemy_id: &str, enemy: &Enemy, _spell_id: &str, spell: &crate::campaign::schema::BaseSpell) -> String {
+        let has_action = self.state.combat_resources.get(enemy_id).map(|r| r.has_action).unwrap_or(false);
+        if !has_action {
+            return String::new();
+        }
+
+        let (ex, ey) = self.state.get_current_room()
+            .and_then(|r| r.enemies.iter().find(|e| e.id == enemy_id))
+            .map(|e| (e.x, e.y))
+            .unwrap_or((enemy.x, enemy.y));
+        let (px, py) = (self.state.player.x, self.state.player.y);
+        let range = spell.range.clone().unwrap_or(crate::engine::state::WeaponRange { normal: 6, long: None });
+        let tiles = self.state.get_current_room().unwrap().tiles.clone();
+
+        let inputs = crate::engine::combat::AttackRollInputs {
+            attacker_pos: (ex, ey),
+            target_pos: (px, py),
+            tiles: &tiles,
+            weapon_range: range,
+            base_atk_bonus: enemy.get_effective_attack_bonus(),
+            apply_adjacent_enemy_penalty: false,
+            enemy_adjacent_to_attacker: false,
+            required_ammo_type: None,
+            has_required_ammo: true,
+        };
+
+        let atk_result = match crate::engine::combat::resolve_attack_roll(inputs) {
+            Ok(r) => r,
+            Err(_) => return String::new(),
+        };
+
+        if let Some(res) = self.state.combat_resources.get_mut(enemy_id) {
+            res.has_action = false;
+        }
+        if let Some(room) = self.state.get_current_room_mut() {
+            if let Some(e) = room.enemies.iter_mut().find(|e| e.id == enemy_id) {
+                e.mana -= spell.mana_cost;
+            }
+        }
+
+        let target_ac = compute_player_ac(&self.state.player);
+        let dmg_dice = spell.damage_dice.clone().unwrap();
+        let dmg_type = spell.damage_type.unwrap_or_default();
+
+        if atk_result.is_crit || atk_result.total >= target_ac {
+            let dmg_roll = crate::engine::combat::resolve_damage_roll(&dmg_dice, 0, atk_result.is_crit);
+            self.state.apply_damage("player", dmg_roll, dmg_type).unwrap();
+            self.state.last_roll = format!("{} casts {}: d20+{} = {} (HIT) Dmg={} ({}){}",
+                enemy.name, spell.name, atk_result.bonus, atk_result.total, dmg_roll, dmg_dice,
+                if atk_result.is_crit { " [CRIT!]" } else { "" });
+            self.state.log_combat(format!("{} casts {} at you: d20+{}={} vs AC {}. Hits for {} damage.",
+                enemy.name, spell.name, atk_result.bonus, atk_result.total, target_ac, dmg_roll));
+
+            format!(
+                "You are the Dungeon Master. Narrate the enemy casting a spell at the player. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                 --- ENGINE FACT PACKET ---\n\
+                 EVENT_TYPE: EnemyCombatAction\n\
+                 RESOLVED_ACTION:\n  actor: \"{}\"\n  action: \"CAST_SPELL\"\n  spell: \"{}\"\n  target: \"player\"\n  outcome: \"HIT\"\n\
+                 DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n  - Damage: {} = {}{}\n\
+                 STATE_DELTAS:\n  - player HP is now {}.\n",
+                enemy.name, spell.name, atk_result.bonus, atk_result.total, target_ac, dmg_dice, dmg_roll,
+                if atk_result.is_crit { " (CRITICAL)" } else { "" }, self.state.player.hp
+            )
+        } else {
+            self.state.last_roll = format!("{} casts {}: d20+{} = {} (MISS)", enemy.name, spell.name, atk_result.bonus, atk_result.total);
+            self.state.log_combat(format!("{} casts {} at you: d20+{}={} vs AC {}. Misses.",
+                enemy.name, spell.name, atk_result.bonus, atk_result.total, target_ac));
+            format!(
+                "You are the Dungeon Master. Narrate the enemy's spell missing the player. Respond ONLY with JSON: {{\"narration\": \"...\", \"commands\": []}}\n\n\
+                 --- ENGINE FACT PACKET ---\n\
+                 EVENT_TYPE: EnemyCombatAction\n\
+                 RESOLVED_ACTION:\n  actor: \"{}\"\n  action: \"CAST_SPELL\"\n  spell: \"{}\"\n  target: \"player\"\n  outcome: \"MISS\"\n\
+                 DICE_ROLLS:\n  - Attack: d20+{} = {} vs AC {}\n\
+                 STATE_DELTAS:\n  - (none)\n",
+                enemy.name, spell.name, atk_result.bonus, atk_result.total, target_ac
+            )
+        }
+    }
+
     /// Execute a single step of patrol/wander/guard behaviour for an NPC that can't see the player.
     fn npc_do_patrol_move(&mut self, enemy_id: &str) -> String {
         // Read current enemy state (clone to avoid borrow issues)
@@ -681,7 +792,14 @@ impl GameEngine {
         let tiles_for_movement = (movement_budget / state::TILE_SIZE_FEET as u32) as i32;
 
         let mut fact_packet = String::new();
+        let mut is_attack = false;
 
+        // ── Prefer casting a known, affordable spell in range/LOS over a mundane attack ──
+        if let Some((spell_id, spell)) = self.find_castable_enemy_spell(&enemy) {
+            let cast_result = self.enemy_try_cast_spell(enemy_id, &enemy, &spell_id, &spell);
+            is_attack = !cast_result.is_empty();
+            fact_packet.push_str(&cast_result);
+        } else {
         // ── AI Decision ──
         enum EnemyAction {
             AttackAndMove,
@@ -711,7 +829,6 @@ impl GameEngine {
         };
 
         // ── Execute ──
-        let mut is_attack = false;
         match action {
             EnemyAction::AttackAndMove | EnemyAction::MoveAndAttack => {
                 let attack_result = self.enemy_try_attack(enemy_id, &enemy, "player",
@@ -892,6 +1009,7 @@ impl GameEngine {
                     enemy.name, enemy.name
                 );
             }
+        }
         }
 
         // Mark action and movement as consumed for enemy

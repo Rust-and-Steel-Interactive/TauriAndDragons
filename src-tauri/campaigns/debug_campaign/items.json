@@ -168,6 +168,32 @@
       "damage_type": "piercing",
       "ammo_type": "bolt",
       "weapon_range": { "normal": 16, "long": 64 }
+    },
+    "wand_of_fire_bolt": {
+      "name": "Wand of Fire Bolt",
+      "item_class": "MAGIC",
+      "base_damage_dice": "1d4",
+      "weight": 1.0,
+      "base_value": 100,
+      "handedness": "ONE_HANDED",
+      "damage_type": "fire",
+      "innate_spell_id": "fire_bolt"
+    },
+    "spellbook_of_force": {
+      "name": "Spellbook of Force",
+      "item_class": "SPELLBOOK",
+      "weight": 2.0,
+      "base_value": 150,
+      "tier": 2,
+      "discipline": "Force",
+      "known_spell_ids": ["force_bolt"]
+    },
+    "scroll_of_fireball": {
+      "name": "Scroll of Fireball",
+      "item_class": "SPELL_SCROLL",
+      "weight": 0.1,
+      "base_value": 200,
+      "scroll_spell_id": "fireball"
     }
   }
 }

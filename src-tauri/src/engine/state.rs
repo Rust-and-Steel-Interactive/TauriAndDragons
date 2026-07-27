@@ -2023,9 +2023,9 @@ impl Player {
             equipped_belt: None,
             utility_slots: vec![],
             damage_profile: DamageProfile::default(),
-            has_resonance: false,
-            mana: 0,
-            max_mana: 0,
+                has_resonance: true,
+                mana: 50,
+                max_mana: 50,
             spellbooks: vec![],
             known_spell_ids: HashSet::new(),
         }

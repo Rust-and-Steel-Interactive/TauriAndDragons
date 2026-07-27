@@ -17,9 +17,14 @@
     "starting_inventory": [
       { "id": "health_potion", "quantity": 5 },
       { "id": "shortsword", "quantity": 1 },
+      { "id": "shortbow", "quantity": 1 },
+      { "id": "arrow", "quantity": 20 },
       { "id": "leather_armor", "quantity": 1 },
       { "id": "thieves_tools", "quantity": 1 },
-      { "id": "torch", "quantity": 2 }
+      { "id": "torch", "quantity": 2 },
+      { "id": "wand_of_fire_bolt", "quantity": 1 },
+      { "id": "spellbook_of_force", "quantity": 1 },
+      { "id": "scroll_of_fireball", "quantity": 1 }
     ],
     "starting_equipped_weapon": "shortsword",
     "starting_thieves_tools": true
